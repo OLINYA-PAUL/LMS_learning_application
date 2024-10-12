@@ -4,8 +4,9 @@ require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
 const cookieParser = require("cookie-parser");
+const { errorMiddleWareHandler } = require("./middleware/error");
+const { catchAsyncErroMiddleWare } = require("./middleware/catchAsyncErrors");
 
-//@ts-ignore
 const app = express();
 
 app.use(express.json({ limit: "50mb" }));
@@ -22,6 +23,8 @@ app.use(
 );
 
 app.use(cookieParser());
+app.use(errorMiddleWareHandler);
+app.use(catchAsyncErroMiddleWare);
 
 app.get("/test", (req: Request, res: Response, nest: NextFunction) => {
   res.status(200).json({
