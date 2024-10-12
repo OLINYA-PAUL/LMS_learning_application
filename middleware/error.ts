@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from "express";
-import errorHandler from "../utils/errorHandler";
+import errorHandler from "../utils/errorHandler"; // Assuming this is a class for handling custom errors
 
 export const errorMiddleWareHandler = (
   err: any,
@@ -7,36 +7,40 @@ export const errorMiddleWareHandler = (
   res: Response,
   next: NextFunction
 ) => {
+  // Default error properties
   err.statusCode = err.statusCode || 500;
   err.message = err.message || "Internal server error";
 
-  // Wrong mogodb url ID
+  // Log the error for debugging (optional)
+  console.error(err);
+
+  // Handle invalid MongoDB ObjectId errors
   if (err.name === "CastError") {
-    const message = `Resourcess not found. invalide  ${err.path}`;
-    err = new errorHandler(message, 400);
+    const message = `Resource not found. Invalid ${err.path}`;
+    err = new errorHandler(message, 400); // 400 Bad Request
   }
 
-  // Duplicate key error
+  // Handle duplicate key errors in MongoDB (e.g., unique field constraints)
   if (err.code === 11000) {
-    const message = `Duplicate ${Object.keys(err.keyValue)} entered`;
-    err = new errorHandler(message, 400);
+    const message = `Duplicate value for ${Object.keys(err.keyValue)} entered`;
+    err = new errorHandler(message, 400); // 400 Bad Request
   }
 
-  // Wrong jwt error
-  if (err.name === "jsonWebTokenError") {
-    const message = "invalide JWT token entered pls! try again";
-    err = new errorHandler(message, 400);
+  // Handle invalid JWT errors
+  if (err.name === "JsonWebTokenError") {
+    const message = "Invalid JWT token, please try again";
+    err = new errorHandler(message, 400); // 400 Bad Request
   }
 
-  // JWT expired error
-
+  // Handle expired JWT errors
   if (err.name === "TokenExpiredError") {
-    const message = "invalide JWT token expired pls! try again";
-    err = new errorHandler(message, 400);
+    const message = "JWT token has expired, please try again";
+    err = new errorHandler(message, 400); // 400 Bad Request
   }
 
+  // Send the error response
   res.status(err.statusCode).json({
     success: false,
-    err: err.message,
+    error: err.message,
   });
 };

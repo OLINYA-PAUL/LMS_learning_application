@@ -1,8 +1,7 @@
-require("dotenv").config();
-import { Response, Request, NextFunction } from "express";
+import { Request, Response, NextFunction } from "express";
 import { UserModel } from "../models/user.models";
 import { catchAsyncErroMiddleWare } from "../middleware/catchAsyncErrors";
-import { errorMiddleWareHandler } from "../middleware/error";
+import ErrorHandler from "../utils/errorHandler"; // Use ErrorHandler instead
 import jwt, { Secret } from "jsonwebtoken";
 import ejs from "ejs";
 import path from "path";
@@ -17,62 +16,53 @@ interface IregisterUser {
 
 export const registerationUser = catchAsyncErroMiddleWare(
   async (req: Request, res: Response, next: NextFunction) => {
+    const { name, email, password, avatar } = req.body as IregisterUser;
+    // console.log("Received user data:", { xxxxxx: name, email, password });
+    if (!email) {
+      return next(new ErrorHandler("Email is required", 400));
+    }
+
+    // Check if email already exists
+    const isEmailExsit = await UserModel.findOne({ email });
+    if (isEmailExsit) {
+      return next(new ErrorHandler("Email already exists", 400)); // Correct usage of ErrorHandler
+    }
+
+    const user: IregisterUser = {
+      name,
+      email,
+      password,
+    };
+
+    const { token, activationCode } = createActivationToken(user);
+
+    const data = { user: { ...user, name }, activationCode };
+
+    // Render email template
+    await ejs.renderFile(
+      path.join(__dirname, "../mails/activation-mail.ejs"),
+      data
+    );
+
     try {
-      const { name, email, password, avatar } = req.body as IregisterUser;
+      // Send email
+      await sendEmail({
+        email: user.email,
+        subject: "Please activate your account!!",
+        template: "activation-mail.ejs",
+        data,
+      });
 
-      const isEmailExsit = await UserModel.findOne({ email });
-      if (!isEmailExsit) {
-        return next(
-          //@ts-ignore
-          new errorMiddleWareHandler(
-            "Email is required for this operation",
-            400
-          )
-        );
-      }
-
-      const user: IregisterUser = {
-        name,
-        email,
-        password,
-      };
-
-      const activationToken = createActivationToken(user);
-
-      const activationCode = activationToken.activationCode;
-
-      const data = { user: { ...user, name }, activationCode };
-      await ejs.renderFile(
-        path.join(__dirname, "../mails/activation-mail.ejs"),
-        data
-      );
-
-      try {
-        await sendEmail({
-          email: user.email,
-          subject: "Please activate your account!!",
-          template: "activation-mail.ejs",
-          data,
-        });
-        res.status(201).json({
-          sucess: true,
-          message: " Please check your email to activate your account",
-          activationToken: activationToken.activationCode,
-        });
-      } catch (error: any) {
-        //@ts-ignore
-        new errorMiddleWareHandler(error.message, 400);
-      }
+      res.status(201).json({
+        success: true,
+        message: "Please check your email to activate your account",
+        activationToken: token,
+      });
     } catch (error: any) {
-      return next(
-        //@ts-ignore
-        new errorMiddleWareHandler(error.message, 400)
-      );
+      return next(new ErrorHandler(error.message, 500)); // Catch and forward email sending error
     }
   }
 );
-{
-}
 
 interface activationToken {
   token: string;
