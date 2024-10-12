@@ -1,13 +1,10 @@
-//@ts-ignore
-const { NextFunction, Request, Response } = require("express");
-//@ts-ignore
-const { errorHandler } = require("../utils/errorHandler");
+import { Request, Response, NextFunction } from "express";
+import errorHandler from "../utils/errorHandler";
 
-const errorMiddleWareHandler = (
+export const errorMiddleWareHandler = (
   err: any,
   req: Request,
   res: Response,
-  //@ts-ignore
   next: NextFunction
 ) => {
   err.statusCode = err.statusCode || 500;
@@ -38,11 +35,8 @@ const errorMiddleWareHandler = (
     err = new errorHandler(message, 400);
   }
 
-  //@ts-ignore
   res.status(err.statusCode).json({
     success: false,
     err: err.message,
   });
 };
-
-module.exports = { errorMiddleWareHandler };

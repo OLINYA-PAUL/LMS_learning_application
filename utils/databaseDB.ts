@@ -1,7 +1,6 @@
-const { mongoose } = require("mongoose");
+import mongoose from "mongoose";
 
-//@ts-ignore
-const connectDbUrl = async (url: string) => {
+export const connectDbUrl = async (url: string) => {
   try {
     return await mongoose.connect(url);
   } catch (error) {
@@ -13,5 +12,3 @@ const connectDbUrl = async (url: string) => {
     }
   }
 };
-
-module.exports = { connectDbUrl };

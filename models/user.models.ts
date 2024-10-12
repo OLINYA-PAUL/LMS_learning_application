@@ -1,9 +1,9 @@
 import mongoose, { Model, Schema, Document } from "mongoose";
-const { bcrypt } = require("bcryptjs");
+import bcrypt from "bcryptjs";
 
 const emailRegexValidation: RegExp = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-interface Iuser extends Document {
+export interface Iuser extends Document {
   name: string;
   email: string;
   password: string;
@@ -14,7 +14,7 @@ interface Iuser extends Document {
   role: string;
   isVerified: boolean;
   courses: Array<{ courseId: string }>;
-  comparePassWord: (password: string) => Promise<boolean>;
+  compareUserPassword: (password: string) => Promise<boolean>;
 }
 
 const userSchema: Schema<Iuser> = new mongoose.Schema(
@@ -83,5 +83,4 @@ userSchema.method.compareUserPassword = async function (
   }
 };
 
-const UserModel: Model<Iuser> = mongoose.model("userSchema", userSchema);
-module.exports = { UserModel };
+export const UserModel: Model<Iuser> = mongoose.model("userSchema", userSchema);

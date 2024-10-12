@@ -1,14 +1,16 @@
 require("dotenv").config();
-//@ts-ignore
-const { connectDbUrl } = require("./utils/databaseDB");
-const { app } = require("./app");
+import { connectDbUrl } from "./utils/databaseDB";
+import app from "./app";
 
 app.listen(process.env.PORT, async () => {
   try {
-    await connectDbUrl(process.env.MODODB_URL).then((data: any) => {
+    //@ts-ignore
+    await connectDbUrl(process.env.MONGODB_URL).then((data: any) => {
       // console.log({ DATATA: data });
-      console.log(`Server is listening to ${data?.connection.host || ""}`);
+      console.log(`Server is listening to ${data.connection.host}`);
     });
+
+    console.log("MONGODB connecte successfully");
   } catch (error) {
     if (error instanceof Error) {
       console.log(error.message);

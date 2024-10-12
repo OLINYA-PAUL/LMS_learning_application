@@ -4,8 +4,9 @@ require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
 const cookieParser = require("cookie-parser");
-const { errorMiddleWareHandler } = require("./middleware/error");
-const { catchAsyncErroMiddleWare } = require("./middleware/catchAsyncErrors");
+import { errorMiddleWareHandler } from "./middleware/error";
+import { catchAsyncErroMiddleWare } from "./middleware/catchAsyncErrors";
+import userRoute from "./routes/user.routes";
 
 const app = express();
 
@@ -26,13 +27,8 @@ app.use(cookieParser());
 app.use(errorMiddleWareHandler);
 app.use(catchAsyncErroMiddleWare);
 
-app.get("/test", (req: Request, res: Response, nest: NextFunction) => {
-  res.status(200).json({
-    success: true,
-    message: "api is working",
-  });
-  console.log("");
-});
+// User route middlware
+app.use("/api/v1", userRoute);
 
 app.get("*", (req: Request, res: Response, next: NextFunction) => {
   res.status(200).json({
@@ -46,4 +42,4 @@ app.get("*", (req: Request, res: Response, next: NextFunction) => {
   next(new Error());
 });
 
-module.exports = { app };
+export default app;

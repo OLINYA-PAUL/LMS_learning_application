@@ -1,5 +1,4 @@
-//@ts-ignore
-class errorHandler extends Error {
+export default class errorHandler extends Error {
   statusCode: number;
   constructor(message: string, statusCode: number) {
     super(message);
@@ -9,5 +8,3 @@ class errorHandler extends Error {
     console.log(errorTraceStack);
   }
 }
-
-module.exports = { errorHandler };
