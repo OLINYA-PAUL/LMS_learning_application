@@ -6,6 +6,9 @@ import jwt, { Secret } from "jsonwebtoken";
 import ejs from "ejs";
 import path from "path";
 import { sendEmail } from "../utils/sendMail";
+import { Iuser } from "../models/user.models";
+import bcrypt from "bcryptjs";
+import { sendToken } from "../utils/JWT";
 
 interface IregisterUser {
   name: string;
@@ -17,7 +20,7 @@ interface IregisterUser {
 export const registerationUser = catchAsyncErroMiddleWare(
   async (req: Request, res: Response, next: NextFunction) => {
     const { name, email, password, avatar } = req.body as IregisterUser;
-    // console.log("Received user data:", { xxxxxx: name, email, password });
+
     if (!email) {
       return next(new ErrorHandler("Email is required", 400));
     }
@@ -28,10 +31,21 @@ export const registerationUser = catchAsyncErroMiddleWare(
       return next(new ErrorHandler("Email already exists", 400)); // Correct usage of ErrorHandler
     }
 
+    // Validate password length BEFORE hashing
+    if (password.length < 6 || password.length > 10) {
+      return res.status(400).json({
+        success: false,
+        error: "Password must be between 6 and 10 characters long.",
+      });
+    }
+
+    // If password is valid, hash the password
+    const hashedPassword = await bcrypt.hash(password, 10);
+
     const user: IregisterUser = {
       name,
       email,
-      password,
+      password: hashedPassword,
     };
 
     const { token, activationCode } = createActivationToken(user);
@@ -47,7 +61,7 @@ export const registerationUser = catchAsyncErroMiddleWare(
     try {
       // Send email
       await sendEmail({
-        email: user.email,
+        email,
         subject: "Please activate your account!!",
         template: "activation-mail.ejs",
         data,
@@ -80,3 +94,79 @@ const createActivationToken = (user: any): activationToken => {
 
   return { token, activationCode };
 };
+
+// Activation token
+
+interface IactivationToken {
+  activation_token: string;
+  actvation_code: string;
+}
+
+export const activateUser = catchAsyncErroMiddleWare(
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { activation_token, actvation_code } = req.body as IactivationToken;
+      const newUser: { user: Iuser; activationCode: string } = jwt.verify(
+        activation_token,
+        process.env.ACTIVATION_SECRET as Secret // Secret key
+      ) as { user: Iuser; activationCode: string };
+
+      if (newUser.activationCode !== actvation_code) {
+        return next(new ErrorHandler("invalide activation code entered", 500)); // Catch and forward email sending error
+      }
+
+      const { name, email, password } = newUser.user;
+
+      const userExsite = await UserModel.findOne({ email });
+      if (userExsite) {
+        return next(new ErrorHandler("user with the email already exsit", 500)); // Catch and forward email sending error
+      }
+
+      const user = await UserModel.create({
+        name,
+        email,
+        password,
+      });
+
+      res
+        .status(201)
+        .json({ sucess: true, message: "user created successfully 💖" });
+    } catch (error: any) {
+      return next(new ErrorHandler(error.message, 500)); // Catch and forward email sending error
+    }
+  }
+);
+
+// login user
+
+interface IloginUser {
+  email: string;
+  passWord: string | number;
+}
+
+export const loginUser = catchAsyncErroMiddleWare(
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { email, passWord } = req.body as IloginUser;
+      if (!email || passWord) {
+        return next(new ErrorHandler("Email and password is required", 500));
+      }
+
+      const user = await UserModel.find({ email }).select("+passWord");
+      if (!user) {
+        return next(new ErrorHandler("Invalide user email or password", 500));
+      }
+
+      //@ts-ignore
+      const comparePassWord = await user.CompareUserPassword(passWord);
+      if (!comparePassWord) {
+        return next(new ErrorHandler("Invalide user email or password", 500));
+      }
+
+      //@ts-ignore
+      sendToken(user, 200, res);
+    } catch (error: any) {
+      return next(new ErrorHandler(error.message, 500));
+    }
+  }
+);

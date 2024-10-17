@@ -4,7 +4,6 @@ import { NextFunction, Request, Response } from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
 import { errorMiddleWareHandler } from "./middleware/error";
-// import { catchAsyncErrorMiddleware } from "./middleware/catchAsyncErrors";
 import userRoute from "./routes/user.routes";
 
 const app = express();
