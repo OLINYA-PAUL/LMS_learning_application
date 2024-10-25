@@ -1,15 +1,19 @@
+// Environment Configuration
 require("dotenv").config();
-import express from "express";
-import { NextFunction, Request, Response } from "express";
+
+// Imports
+import express, { NextFunction, Request, Response } from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
 import { errorMiddleWareHandler } from "./middleware/error";
 import userRoute from "./routes/user.routes";
 
+// Initialize Express App
 const app = express();
 
+// Middlewares
+app.use(cookieParser());
 app.use(express.json({ limit: "50mb" }));
-
 app.use(
   cors({
     origin: process.env.ORIGIN || "http://localhost:3000", // Fallback to localhost
@@ -21,16 +25,15 @@ app.use(
   })
 );
 
-app.use(cookieParser());
-
 // Routes
-app.get("/test", (req: Request, res: Response, next: NextFunction) => {
+app.get("/test", (req: Request, res: Response) => {
   res.status(200).json({ success: true, message: "User created successfully" });
 });
 
 app.use("/api/v1", userRoute);
 
-app.get("*", (req: Request, res: Response, next: NextFunction) => {
+// 404 Route Handler
+app.get("*", (req: Request, res: Response) => {
   res.status(404).json({
     error: false,
     errorMessage: `The route you searched (${req.originalUrl}) is not available. Please go back to the homepage.`,
@@ -40,4 +43,5 @@ app.get("*", (req: Request, res: Response, next: NextFunction) => {
 // Error Handling Middleware
 app.use(errorMiddleWareHandler);
 
+// Export App
 export default app;

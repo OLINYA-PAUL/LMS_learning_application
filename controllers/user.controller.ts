@@ -169,8 +169,8 @@ export const logOutUser = catchAsyncErroMiddleWare(
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       // Set the cookies with maxAge to expire them immediately
-      res.cookie("access-token", "", { maxAge: 1 });
-      res.cookie("refresh-token", "", { maxAge: 1 });
+      res.cookie("access_token", "", { maxAge: 1 });
+      res.cookie("refresh_token", "", { maxAge: 1 });
 
       res.status(200).json({ success: true, message: "Logout successfully" });
     } catch (error: any) {

@@ -76,12 +76,6 @@ userSchema.pre<Iuser>("save", async function (next) {
   next(); // Proceed to the next middleware or save operation
 });
 
-// Sign acssess token
-
-userSchema.methods.SignAccessToken = function () {
-  return JWT.sign({ id: this._id }, (process.env.ACCESS_TOKEN as string) || "");
-};
-
 userSchema.methods.CompareUserPassword = async function (
   password: string
 ): Promise<boolean> {
@@ -90,6 +84,12 @@ userSchema.methods.CompareUserPassword = async function (
   }
 
   return true;
+};
+
+// Sign acssess token
+
+userSchema.methods.SignAccessToken = function () {
+  return JWT.sign({ id: this._id }, (process.env.ACCESS_TOKEN as string) || "");
 };
 
 // Sign refress token

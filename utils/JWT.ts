@@ -14,8 +14,8 @@ interface ItokenCookieOptions {
 export const sendToken = (user: Iuser, statusCode: number, res: Response) => {
   const redis = createRedisClient();
   try {
-    const accessToken = user.SignAccessToken();
-    const refreshToken = user.SignRefreshToken();
+    const access_token = user.SignAccessToken();
+    const refresh_token = user.SignRefreshToken();
 
     // Optionally upload session to Redis DB
 
@@ -39,14 +39,14 @@ export const sendToken = (user: Iuser, statusCode: number, res: Response) => {
       expires: new Date(Date.now() + accessTokenExpire),
       httpOnly: true,
       maxAge: accessTokenExpire,
-      sameSite: "lax", // Consider changing to "strict" if CSRF protection is critical
+      sameSite: process.env.NODE_ENV === "production" ? "lax" : "strict",
     };
 
     const refreshTokenOptions: ItokenCookieOptions = {
       expires: new Date(Date.now() + refreshTokenExpire),
       httpOnly: true,
       maxAge: refreshTokenExpire,
-      sameSite: "lax",
+      sameSite: process.env.NODE_ENV === "production" ? "lax" : "strict",
     };
 
     // Set secure cookies in production
@@ -56,14 +56,14 @@ export const sendToken = (user: Iuser, statusCode: number, res: Response) => {
     }
 
     // Set cookies in response
-    res.cookie("access-token", accessToken, accessTokenOptions);
-    res.cookie("refresh-token", refreshToken, refreshTokenOptions);
+    res.cookie("access_token", access_token, accessTokenOptions);
+    res.cookie("refresh_token", refresh_token, refreshTokenOptions);
 
     res.status(statusCode).json({
       success: true,
       message: "Token sent successfully 😂",
       user,
-      accessToken,
+      access_token,
     });
   } catch (error) {
     console.error("Error sending token:", error);
