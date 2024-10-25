@@ -1,6 +1,6 @@
 require("dotenv").config();
 import { Iuser } from "../models/user.models";
-import { redisDB } from "./redis";
+const createRedisClient = require("./redis");
 import { Response } from "express";
 
 interface ItokenCookieOptions {
@@ -12,26 +12,21 @@ interface ItokenCookieOptions {
 }
 
 export const sendToken = (user: Iuser, statusCode: number, res: Response) => {
-  //@ts-ignore
-  const { client } = redisDB();
-
+  const redis = createRedisClient();
   try {
-    const accessToken = user.SignAccessToken(); // Corrected spelling
-    const refreshToken = user.SignRefreshToken(); // Corrected spelling
+    const accessToken = user.SignAccessToken();
+    const refreshToken = user.SignRefreshToken();
 
     // Optionally upload session to Redis DB
 
-    client.set(
-      user._id,
-      JSON.stringify(user) as any,
-      (err: any, result: any) => {
-        if (err) {
-          console.error("Error setting value in Redis:", err);
-        } else {
-          console.log("Value set successfully in Redis:", result);
-        }
+    redis.set(user._id, JSON.stringify(user), (err: string, data: any) => {
+      try {
+        if (data) return data;
+        if (err) console.error("Error setting Redis data:", err);
+      } catch (error) {
+        console.log("Caught error:", error);
       }
-    );
+    });
 
     // Expiration times (in milliseconds)
     const accessTokenExpire =

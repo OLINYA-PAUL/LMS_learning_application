@@ -1,14 +1,29 @@
 require("dotenv").config();
 const Redis = require("ioredis");
 
-export const redisDB = async () => {
-  try {
-    if (!process.env.REDIS_URL) {
-      throw new Error("Redis URL is not provided.");
-    }
-    const client = await new Redis(process.env.REDIS_URL);
-    return { client };
-  } catch (error: any) {
-    throw new Error("Failed to connect to Redis database: " + error.message);
+const createRedisClient = () => {
+  const redisUrl = process.env.REDIS_URL;
+
+  if (!redisUrl) {
+    throw new Error("REDIS_URL environment variable is missing");
   }
+
+  // Initialize Redis with the URL and TLS options
+  const redis = new Redis(redisUrl, {
+    tls: { rejectUnauthorized: false },
+    debug: true, // Enable debug logging if needed
+  });
+
+  redis.on("connect", () => {
+    console.log("Redis is connected successfully");
+  });
+
+  redis.on("error", (error: any) => {
+    console.error("Redis connection error:", error.message);
+  });
+
+  return redis;
 };
+
+// Export the Redis client instance
+module.exports = createRedisClient;

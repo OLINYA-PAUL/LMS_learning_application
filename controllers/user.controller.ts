@@ -32,20 +32,17 @@ export const registerationUser = catchAsyncErroMiddleWare(
     }
 
     // Validate password length BEFORE hashing
-    if (password.length < 6 || password.length > 10) {
+    if (password.length < 6) {
       return res.status(400).json({
         success: false,
         error: "Password must be between 6 and 10 characters long.",
       });
     }
 
-    // If password is valid, hash the password
-    const hashedPassword = await bcrypt.hash(password, 10);
-
     const user: IregisterUser = {
       name,
       email,
-      password: hashedPassword,
+      password,
     };
 
     const { token, activationCode } = createActivationToken(user);
@@ -106,6 +103,7 @@ export const activateUser = catchAsyncErroMiddleWare(
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const { activation_token, actvation_code } = req.body as IactivationToken;
+
       const newUser: { user: Iuser; activationCode: string } = jwt.verify(
         activation_token,
         process.env.ACTIVATION_SECRET as Secret // Secret key
@@ -119,7 +117,7 @@ export const activateUser = catchAsyncErroMiddleWare(
 
       const userExsite = await UserModel.findOne({ email });
       if (userExsite) {
-        return next(new ErrorHandler("user with the email already exsit", 500)); // Catch and forward email sending error
+        return next(new ErrorHandler("user with the email already exsit", 400)); // Catch and forward email sending error
       }
 
       const user = await UserModel.create({
@@ -128,6 +126,7 @@ export const activateUser = catchAsyncErroMiddleWare(
         password,
       });
 
+      await user.save();
       res
         .status(201)
         .json({ sucess: true, message: "user created successfully 💖" });
@@ -141,29 +140,25 @@ export const activateUser = catchAsyncErroMiddleWare(
 
 interface IloginUser {
   email: string;
-  passWord: string | number;
+  password: string;
 }
 
 export const loginUser = catchAsyncErroMiddleWare(
   async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const { email, passWord } = req.body as IloginUser;
-      if (!email || passWord) {
-        return next(new ErrorHandler("Email and password is required", 500));
+      const { email, password } = req.body as IloginUser;
+      if (!email || !password) {
+        return next(new ErrorHandler("Email and password are required", 400));
       }
 
-      const user = await UserModel.find({ email }).select("+passWord");
+      const user = await UserModel.findOne({ email }).select("+password");
       if (!user) {
-        return next(new ErrorHandler("Invalide user email or password", 500));
+        return next(new ErrorHandler("Invalid user email or password", 400));
       }
 
-      //@ts-ignore
-      const comparePassWord = await user.CompareUserPassword(passWord);
-      if (!comparePassWord) {
-        return next(new ErrorHandler("Invalide user email or password", 500));
-      }
+      // This method will throw an error if the password doesn't match
+      await user.CompareUserPassword(password);
 
-      //@ts-ignore
       sendToken(user, 200, res);
     } catch (error: any) {
       return next(new ErrorHandler(error.message, 500));

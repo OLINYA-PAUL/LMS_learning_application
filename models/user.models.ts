@@ -2,6 +2,7 @@ require("dotenv").config();
 import mongoose, { Model, Schema, Document } from "mongoose";
 import bcrypt from "bcryptjs";
 import JWT from "jsonwebtoken";
+import { error } from "console";
 
 const emailRegexValidation: RegExp = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -81,6 +82,16 @@ userSchema.methods.SignAccessToken = function () {
   return JWT.sign({ id: this._id }, (process.env.ACCESS_TOKEN as string) || "");
 };
 
+userSchema.methods.CompareUserPassword = async function (
+  password: string
+): Promise<boolean> {
+  if (!(await bcrypt.compare(password, this.password))) {
+    throw new Error("Password does not match");
+  }
+
+  return true;
+};
+
 // Sign refress token
 
 userSchema.methods.SignRefreshToken = function () {
@@ -88,18 +99,6 @@ userSchema.methods.SignRefreshToken = function () {
     { id: this._id },
     (process.env.REFRESS_TOKEN as string) || ""
   );
-};
-
-userSchema.methods.CompareUserPassword = async function (
-  password: string
-): Promise<boolean> {
-  const comparePassword = await bcrypt.compare(password, this.password);
-
-  if (comparePassword) {
-    return true; // Return true if the password matches
-  } else {
-    throw new Error("Password does not match"); // Reject with an error if the password doesn't match
-  }
 };
 
 export const UserModel: Model<Iuser> = mongoose.model("userSchema", userSchema);
