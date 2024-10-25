@@ -1,4 +1,4 @@
-import { Request, Response, NextFunction } from "express";
+import { Request, Response, NextFunction, response } from "express";
 import { UserModel } from "../models/user.models";
 import { catchAsyncErroMiddleWare } from "../middleware/catchAsyncErrors";
 import ErrorHandler from "../utils/errorHandler"; // Use ErrorHandler instead
@@ -7,7 +7,6 @@ import ejs from "ejs";
 import path from "path";
 import { sendEmail } from "../utils/sendMail";
 import { Iuser } from "../models/user.models";
-import bcrypt from "bcryptjs";
 import { sendToken } from "../utils/JWT";
 
 interface IregisterUser {
@@ -162,6 +161,20 @@ export const loginUser = catchAsyncErroMiddleWare(
       sendToken(user, 200, res);
     } catch (error: any) {
       return next(new ErrorHandler(error.message, 500));
+    }
+  }
+);
+
+export const logOutUser = catchAsyncErroMiddleWare(
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      // Set the cookies with maxAge to expire them immediately
+      res.cookie("access-token", "", { maxAge: 1 });
+      res.cookie("refresh-token", "", { maxAge: 1 });
+
+      res.status(200).json({ success: true, message: "Logout successfully" });
+    } catch (error: any) {
+      return next(new ErrorHandler(error.message, 400));
     }
   }
 );
