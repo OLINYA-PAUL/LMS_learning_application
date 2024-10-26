@@ -11,6 +11,30 @@ interface ItokenCookieOptions {
   secure?: boolean;
 }
 
+// Expiration times (in milliseconds)
+const accessTokenExpire = parseInt(
+  process.env.ACCESS_TOKEN_EXPIRE || "300",
+  10
+);
+const refreshTokenExpire = parseInt(
+  process.env.REFRESH_TOKEN_EXPIRE || "1200",
+  10
+);
+// Options for cookies
+export const accessTokenOptions: ItokenCookieOptions = {
+  expires: new Date(Date.now() + accessTokenExpire * 60 * 60 * 1000),
+  httpOnly: true,
+  maxAge: accessTokenExpire * 60 * 60 * 1000,
+  sameSite: process.env.NODE_ENV === "production" ? "lax" : "strict",
+};
+
+export const refreshTokenOptions: ItokenCookieOptions = {
+  expires: new Date(Date.now() + refreshTokenExpire * 24 * 60 * 60 * 1000),
+  httpOnly: true,
+  maxAge: refreshTokenExpire * 24 * 60 * 60 * 1000,
+  sameSite: process.env.NODE_ENV === "production" ? "lax" : "strict",
+};
+
 export const sendToken = (user: Iuser, statusCode: number, res: Response) => {
   const redis = createRedisClient();
   try {
@@ -27,27 +51,6 @@ export const sendToken = (user: Iuser, statusCode: number, res: Response) => {
         console.log("Caught error:", error);
       }
     });
-
-    // Expiration times (in milliseconds)
-    const accessTokenExpire =
-      parseInt(process.env.ACCESS_TOKEN_EXPIRE || "300", 10) * 1000; // Corrected multiplier for ms
-    const refreshTokenExpire =
-      parseInt(process.env.REFRESH_TOKEN_EXPIRE || "1200", 10) * 1000; // Corrected multiplier for ms
-
-    // Options for cookies
-    const accessTokenOptions: ItokenCookieOptions = {
-      expires: new Date(Date.now() + accessTokenExpire),
-      httpOnly: true,
-      maxAge: accessTokenExpire,
-      sameSite: process.env.NODE_ENV === "production" ? "lax" : "strict",
-    };
-
-    const refreshTokenOptions: ItokenCookieOptions = {
-      expires: new Date(Date.now() + refreshTokenExpire),
-      httpOnly: true,
-      maxAge: refreshTokenExpire,
-      sameSite: process.env.NODE_ENV === "production" ? "lax" : "strict",
-    };
 
     // Set secure cookies in production
     if (process.env.NODE_ENV === "production") {

@@ -89,7 +89,11 @@ userSchema.methods.CompareUserPassword = async function (
 // Sign acssess token
 
 userSchema.methods.SignAccessToken = function () {
-  return JWT.sign({ id: this._id }, (process.env.ACCESS_TOKEN as string) || "");
+  return JWT.sign(
+    { id: this._id },
+    (process.env.ACCESS_TOKEN as string) || "",
+    { expiresIn: "5m" }
+  );
 };
 
 // Sign refress token
@@ -97,7 +101,8 @@ userSchema.methods.SignAccessToken = function () {
 userSchema.methods.SignRefreshToken = function () {
   return JWT.sign(
     { id: this._id },
-    (process.env.REFRESS_TOKEN as string) || ""
+    (process.env.REFRESS_TOKEN as string) || "",
+    { expiresIn: "5m" }
   );
 };
 
