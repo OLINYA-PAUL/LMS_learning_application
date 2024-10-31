@@ -2,7 +2,9 @@ import mongoose from "mongoose";
 
 export const connectDbUrl = async (url: string) => {
   try {
-    return await mongoose.connect(url, { serverSelectionTimeoutMS: 5000 });
+    return await mongoose.connect(url, {
+      serverSelectionTimeoutMS: 8000,
+    });
   } catch (error) {
     // Check if error is an instance of Error
     if (error instanceof Error) {

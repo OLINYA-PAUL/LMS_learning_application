@@ -2,7 +2,6 @@ require("dotenv").config();
 import mongoose, { Model, Schema, Document } from "mongoose";
 import bcrypt from "bcryptjs";
 import JWT from "jsonwebtoken";
-import { error } from "console";
 
 const emailRegexValidation: RegExp = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -10,6 +9,7 @@ export interface Iuser extends Document {
   name: string;
   email: string;
   password: string;
+  authType: "local" | "social";
   avatar: {
     public_Id: string;
     url: string;
@@ -41,12 +41,17 @@ const userSchema: Schema<Iuser> = new mongoose.Schema(
     },
     password: {
       type: String,
-      required: [true, "password is required"],
-      unique: true,
+      required: function (this: Iuser) {
+        // Require password only if authType is 'local'
+        return this.authType === "local";
+      },
+      select: false,
+      unique: false,
       minlength: [
         6,
         "password must be atleast 6 characters you passde {VALUE}",
       ],
+      authType: { type: String, required: true, enum: ["local", "social"] },
     },
     avatar: {
       public_Id: String,

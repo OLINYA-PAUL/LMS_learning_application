@@ -7,10 +7,12 @@ app.listen(process.env.PORT, async () => {
     //@ts-ignore
     await connectDbUrl(process.env.MONGODB_URL).then((data: any) => {
       // console.log({ DATATA: data });
-      console.log(`Server is listening to ${data.connection.host}`);
+      console.log(
+        `Server is listening to ${process.env.PORT} - ${data.connection.host}`
+      );
     });
 
-    console.log("MONGODB connecte successfully");
+    console.log("MONGODB connected successfully");
   } catch (error) {
     if (error instanceof Error) {
       console.log(error.message);
