@@ -1,7 +1,9 @@
 require("dotenv").config();
 import { connectDbUrl } from "./utils/databaseDB";
 import app from "./app";
+import { cloudinaryConfig } from "./utils/cloudinary";
 
+cloudinaryConfig();
 app.listen(process.env.PORT, async () => {
   try {
     //@ts-ignore
@@ -11,8 +13,6 @@ app.listen(process.env.PORT, async () => {
         `Server is listening to ${process.env.PORT} - ${data.connection.host}`
       );
     });
-
-    console.log("MONGODB connected successfully");
   } catch (error) {
     if (error instanceof Error) {
       console.log(error.message);

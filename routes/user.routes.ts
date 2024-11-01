@@ -7,6 +7,7 @@ import {
   registerationUser,
   socialAuth,
   updateAccessToken,
+  updateUserAvatar,
   updateUserInfo,
   updateUserPassword,
 } from "../controllers/user.controller";
@@ -23,5 +24,6 @@ userRoute.get("/refresh-token", updateAccessToken);
 userRoute.get("/getuser-id", isAuthenticated, getUserInfo);
 userRoute.put("/updateuser-info", isAuthenticated, updateUserInfo);
 userRoute.put("/updateuser-password", isAuthenticated, updateUserPassword);
+userRoute.put("/updateuser-avatar", isAuthenticated, updateUserAvatar);
 
 export default userRoute;

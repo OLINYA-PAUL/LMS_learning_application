@@ -314,13 +314,11 @@ export const updateUserInfo = catchAsyncErroMiddleWare(
       await user?.save();
       await redis.set(userId, JSON.stringify(user) as string);
 
-      res
-        .status(200)
-        .json({
-          success: true,
-          message: "user email and name updated successfully",
-          user,
-        });
+      res.status(200).json({
+        success: true,
+        message: "user email and name updated successfully",
+        user,
+      });
     } catch (error: any) {
       return next(new ErrorHandler(error.message, 400));
     }
@@ -380,6 +378,9 @@ export const updateUserAvatar = catchAsyncErroMiddleWare(
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const { avatar } = req.body as IupdateUserAvatar;
+      if (!avatar) {
+        return next(new ErrorHandler("image is required", 400));
+      }
 
       const userId = req.user?._id;
 
