@@ -6,7 +6,7 @@ import JWT from "jsonwebtoken";
 const emailRegexValidation: RegExp = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export interface Iuser extends Document {
-  name: string;
+  name: string;   
   email: string;
   password: string;
   authType: "local" | "social";
