@@ -4,7 +4,7 @@ import mongoose, { Model, Schema, Document } from "mongoose";
 interface IComment extends Document {
   user: object;
   comment: string;
-  commentReplies?: IComment[];
+  commentReplies?: string;
 }
 [];
 
@@ -31,8 +31,8 @@ interface ICourseData extends Document {
   videoSection: string;
   videoPlayer: string;
   link: ILinks[];
-  question: IComment[];
-  suggestion: string;
+  questions: IComment[];
+  suggestions: string;
 }
 [];
 
@@ -81,8 +81,8 @@ const courseDataSchema = new Schema<ICourseData>({
   videoSection: String,
   videoPlayer: String,
   link: [likSchema],
-  question: [commentSchema],
-  suggestion: String,
+  questions: [commentSchema],
+  suggestions: String,
 });
 
 const courseSchema = new Schema<ICourse>(
