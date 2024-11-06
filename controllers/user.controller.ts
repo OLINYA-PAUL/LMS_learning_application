@@ -260,7 +260,7 @@ interface IsocialAuthBody {
 export const socialAuth = catchAsyncErroMiddleWare(
   async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const { email, name, avatar, password } = req.body as IsocialAuthBody;
+      const { email, name, avatar } = req.body as IsocialAuthBody;
 
       if (!email || !name || !avatar) {
         return next(new ErrorHandler("This field is required", 400));

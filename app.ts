@@ -7,6 +7,7 @@ import cors from "cors";
 import cookieParser from "cookie-parser";
 import { errorMiddleWareHandler } from "./middleware/error";
 import userRoute from "./routes/user.routes";
+import courseRoute from "./routes/course.routes";
 
 // Initialize Express App
 const app = express();
@@ -31,6 +32,7 @@ app.get("/test", (req: Request, res: Response) => {
 });
 
 app.use("/api/v1", userRoute);
+app.use("/api/v1", courseRoute);
 
 // 404 Route Handler
 app.get("*", (req: Request, res: Response) => {
