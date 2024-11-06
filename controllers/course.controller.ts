@@ -34,7 +34,7 @@ export const updateCourse = catchAsyncErroMiddleWare(
       const courseId = req.params.id;
       const data = req.body;
 
-      const thumbnailID = data.thumbnails.public_Id;
+      const thumbnailID = data.thumbnails;
 
       if (thumbnailID) {
         // Handle previous thumbnail deletion if `public_Id` exists
