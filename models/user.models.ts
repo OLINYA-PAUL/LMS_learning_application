@@ -6,7 +6,7 @@ import JWT from "jsonwebtoken";
 const emailRegexValidation: RegExp = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export interface Iuser extends Document {
-  name: string;   
+  name: string;
   email: string;
   password: string;
   authType: "local" | "social";
@@ -16,7 +16,7 @@ export interface Iuser extends Document {
   };
   role: string;
   isVerified: boolean;
-  courses: Array<{ courseId: string }>;
+  courses: Array<{ course_Id: string; _id?: string }>;
   CompareUserPassword: (password: string) => Promise<boolean>;
   SignAccessToken: () => string;
   SignRefreshToken: () => string;
@@ -49,7 +49,7 @@ const userSchema: Schema<Iuser> = new mongoose.Schema(
       unique: false,
       minlength: [
         6,
-        "password must be atleast 6 characters you passde {VALUE}",
+        "password must be atleast 6 characters you passed {VALUE}",
       ],
       authType: { type: String, required: true, enum: ["local", "social"] },
     },
@@ -67,7 +67,7 @@ const userSchema: Schema<Iuser> = new mongoose.Schema(
     },
     courses: [
       {
-        courseId: String,
+        course_Id: String,
       },
     ],
   },

@@ -4,6 +4,10 @@ import cloudinary from "cloudinary";
 import ErrorHandler from "../utils/errorHandler";
 import { createCourse } from "../services/course.service";
 import { CourseModel } from "../models/course.model";
+import mongoose from "mongoose";
+import path from "path";
+import ejs from "ejs";
+import { sendEmail } from "../utils/sendMail";
 const createRedisClient = require("../utils/redis");
 
 const redis = createRedisClient();
@@ -139,6 +143,229 @@ export const getAllleCourse = catchAsyncErroMiddleWare(
           course,
         });
       }
+    } catch (error: any) {
+      return next(new ErrorHandler(error.message, 400));
+    }
+  }
+);
+
+// only for user who purchase course only
+
+export const getCourseByUser = catchAsyncErroMiddleWare(
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const getUserCourse = req.user?.courses;
+      const courseId = req.params.id;
+
+      const findUserCourse = getUserCourse?.find(
+        (course) => course._id === courseId
+      );
+
+      if (!findUserCourse) {
+        return next(
+          new ErrorHandler("You are not authorized to view this content", 400)
+        );
+      }
+
+      const courseContent = await CourseModel.findById(courseId);
+      if (!courseContent) {
+        return next(new ErrorHandler("No course found", 400));
+      }
+
+      res.status(200).json({
+        success: true,
+        courseContent,
+      });
+    } catch (error: any) {
+      return next(new ErrorHandler(error.message, 400));
+    }
+  }
+);
+
+interface IAddQuestion {
+  question: string;
+  courseId: string;
+  contentId: string;
+}
+
+export const addQuestions = catchAsyncErroMiddleWare(
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { question, courseId, contentId } = req.body as IAddQuestion;
+
+      const course = await CourseModel.findById(courseId);
+
+      if (!course) {
+        return next(new ErrorHandler("Invalid course", 400));
+      }
+
+      if (!mongoose.Types.ObjectId.isValid(contentId)) {
+        return next(new ErrorHandler("Invalid content ID", 400));
+      }
+
+      const courseContent = course?.courseData.find((course: any) =>
+        course._id.equals(contentId)
+      );
+
+      const addnewQuestion = {
+        user: req.user,
+        question,
+        questionReplies: [],
+      };
+
+      courseContent?.question.push(addnewQuestion as any);
+
+      await course.save();
+
+      res.status(200).json({
+        success: true,
+        course,
+      });
+    } catch (error: any) {
+      return next(new ErrorHandler(error.message, 400));
+    }
+  }
+);
+
+interface IAddAnswer {
+  answer: string;
+  questionId: string;
+  courseId: string;
+  contentId: string;
+}
+
+export const addAnswer = catchAsyncErroMiddleWare(
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { answer, questionId, courseId, contentId } =
+        req.body as IAddAnswer;
+
+      const course = await CourseModel.findById(courseId);
+
+      if (!course) {
+        return next(new ErrorHandler("Invalid course", 400));
+      }
+
+      if (!mongoose.Types.ObjectId.isValid(contentId)) {
+        return next(new ErrorHandler("Invalid content ID", 400));
+      }
+
+      const courseContent = course?.courseData.find((course: any) =>
+        course._id.equals(contentId)
+      );
+
+      if (!courseContent)
+        return next(new ErrorHandler("Invalid content ID", 400));
+
+      const question = courseContent.question.find((questionsId: any) =>
+        questionsId._id.equals(questionId)
+      );
+
+      if (!question) return next(new ErrorHandler("Invalid question ID", 400));
+
+      const addnewAnswer = {
+        user: req.user,
+        answer,
+      } as any;
+
+      question.questionReplies?.push(addnewAnswer) ?? [];
+      await course.save();
+
+      if (req.user?._id === question.user._id) {
+        // await sendNotification()
+        console.log("notification............");
+      } else {
+        const data = {
+          name: req.user?.name,
+          title: courseContent.title,
+        };
+
+        // render the data to EJS TEMPLATE
+        const html = await ejs.renderFile(
+          path.join(__dirname, "../mails/question-reply.ejs"),
+          data
+        );
+
+        try {
+          sendEmail({
+            email: req.user?.email ?? "",
+            subject: "Question Replies",
+            template: "question-reply.ejs",
+            data,
+          });
+        } catch (error: any) {
+          return next(new ErrorHandler(error.message, 400));
+        }
+      }
+
+      res.status(200).json({
+        success: true,
+        course,
+      });
+    } catch (error: any) {
+      return next(new ErrorHandler(error.message, 400));
+    }
+  }
+);
+
+// addreview
+
+interface IAddReview {
+  review: number;
+  rating: string;
+  userId: string;
+}
+
+export const addReview = catchAsyncErroMiddleWare(
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const userCourseList = req.user?.courses;
+      const courseId = req.user?._id;
+
+      const courseExsit = userCourseList?.some(
+        (course) => (course._id as string) === (courseId as string)
+      );
+
+      if (!courseExsit)
+        return next(
+          new ErrorHandler("Access to these resources is restricted", 400)
+        );
+
+      const course = await CourseModel.findById(courseId);
+
+      if (!course) return next(new ErrorHandler("Failed to get course", 400));
+
+      const { review, rating } = req.body as IAddReview;
+
+      const addData = {
+        user: req.user,
+        rating,
+        comment: review,
+      } as any;
+
+      course.reviews.push(addData);
+
+      let avg = 0;
+
+      course.reviews.forEach((rev) => {
+        avg += rev.ratings;
+      });
+
+      if (course) {
+        course.ratings = avg / course.reviews.length;
+      }
+
+      await course.save();
+
+      const notification = {
+        title: "New reviews received",
+        message: `${req.user?.name} has giving a review in ${course.name} with ${course.ratings} rating score `,
+      };
+
+      res.status(200).json({
+        success: true,
+        course,
+      });
     } catch (error: any) {
       return next(new ErrorHandler(error.message, 400));
     }

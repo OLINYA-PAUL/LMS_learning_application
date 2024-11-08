@@ -1,18 +1,19 @@
 require("dotenv").config();
 import mongoose, { Model, Schema, Document } from "mongoose";
+import { Iuser } from "./user.models";
 
 interface IComment extends Document {
-  user: object;
-  comment: string;
-  commentReplies?: string;
+  user: Iuser;
+  question: string;
+  questionReplies?: [IComment];
 }
 [];
 
 export interface IReview extends Document {
-  user: string;
-  rating: number;
+  user: Iuser;
+  ratings: number;
   comment: string;
-  commentReplies: IComment[];
+  commentReplies?: IComment[];
 }
 [];
 
@@ -31,7 +32,7 @@ interface ICourseData extends Document {
   videoSection: string;
   videoPlayer: string;
   link: ILinks[];
-  questions: IComment[];
+  question: IComment[];
   suggestions: string;
 }
 [];
@@ -49,13 +50,13 @@ interface ICourse extends Document {
   prerequiste: { title: string }[];
   reviews: IReview[];
   courseData: ICourseData[];
-  rating?: number;
+  ratings?: number;
   purchased?: number;
 }
 
 const revieweSchema = new Schema<IReview>({
   user: Object,
-  rating: {
+  ratings: {
     type: Number,
     default: 0,
   },
@@ -70,8 +71,8 @@ const likSchema = new Schema<ILinks>({
 
 const commentSchema = new Schema<IComment>({
   user: Object,
-  comment: String,
-  commentReplies: [Object],
+  question: String,
+  questionReplies: [Object],
 });
 
 const courseDataSchema = new Schema<ICourseData>({
@@ -81,7 +82,7 @@ const courseDataSchema = new Schema<ICourseData>({
   videoSection: String,
   videoPlayer: String,
   link: [likSchema],
-  questions: [commentSchema],
+  question: [commentSchema],
   suggestions: String,
 });
 
@@ -127,7 +128,7 @@ const courseSchema = new Schema<ICourse>(
     prerequiste: [{ title: String }],
     reviews: [revieweSchema],
     courseData: [courseDataSchema],
-    rating: {
+    ratings: {
       type: String,
       default: 0,
     },
