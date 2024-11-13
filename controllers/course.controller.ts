@@ -391,7 +391,6 @@ export const addCommenToReview = catchAsyncErroMiddleWare(
       const reviews = course.reviews?.find((review: any) => {
         return review._id.toString() === reviewId.toString();
       });
-      console.log({ reviesIDs: reviews?._id });
 
       if (!reviews || course.reviews.length === 0)
         return next(new ErrorHandler("Invalide review ID", 400));
@@ -401,8 +400,12 @@ export const addCommenToReview = catchAsyncErroMiddleWare(
         comment,
       };
 
-      course.reviews.push(addCommentToReviews as any);
-      course.save();
+      if (!reviews.commentReplies) {
+        reviews.commentReplies = [];
+      }
+
+      reviews?.commentReplies?.push(addCommentToReviews as any);
+      await course.save();
 
       res.status(200).json({ success: true, course });
     } catch (error: any) {

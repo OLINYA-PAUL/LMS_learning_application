@@ -1,3 +1,5 @@
+require("dotenv").config();
+
 import { Request, Response, NextFunction, response } from "express";
 import { UserModel } from "../models/user.models";
 import { catchAsyncErroMiddleWare } from "../middleware/catchAsyncErrors";
@@ -191,38 +193,47 @@ export const logOutUser = catchAsyncErroMiddleWare(
 );
 
 // update user access_token ID
+
 export const updateAccessToken = catchAsyncErroMiddleWare(
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const refresh_token = req.cookies.refresh_token;
-      const message = "Could not refress token";
 
-      // veify user credentials from cookies
-      const decoded = jwt.verify(
-        refresh_token,
-        process.env.REFRESS_TOKEN as string
-      ) as JwtPayload;
-
-      if (!decoded) {
-        return next(new ErrorHandler(message, 400));
+      if (!refresh_token) {
+        return next(new ErrorHandler("Refresh token not provided", 401));
       }
-      const session = (await redis.get(decoded.id)) as string;
 
+      let decoded: JwtPayload;
+      try {
+        decoded = jwt.verify(
+          refresh_token,
+          process.env.REFRESH_TOKEN as string
+        ) as JwtPayload;
+      } catch (error) {
+        return next(new ErrorHandler("Invalid or expired refresh token", 401));
+      }
+
+      const session = await redis.get(decoded.id);
       if (!session) {
-        return next(new ErrorHandler(message, 400));
+        return next(new ErrorHandler("User session expired or invalid", 401));
       }
 
-      const user = JSON.parse(session);
+      let user;
+      try {
+        user = JSON.parse(session);
+      } catch (error) {
+        return next(new ErrorHandler("Invalid session data", 500));
+      }
 
       const accessToken = jwt.sign(
         { id: user._id },
-        process.env.ACCESS_TOKEN as string,
+        (process.env.ACCESS_TOKEN as string) ?? "",
         { expiresIn: "5m" }
       );
 
       const refreshToken = jwt.sign(
         { id: user._id },
-        process.env.ACCESS_TOKEN as string,
+        (process.env.REFRESH_TOKEN as string) ?? "",
         { expiresIn: "3d" }
       );
 
