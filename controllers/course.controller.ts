@@ -8,6 +8,7 @@ import mongoose from "mongoose";
 import path from "path";
 import ejs from "ejs";
 import { sendEmail } from "../utils/sendMail";
+import { idText } from "typescript";
 const createRedisClient = require("../utils/redis");
 
 const redis = createRedisClient();
@@ -90,11 +91,11 @@ export const getSingleCourse = catchAsyncErroMiddleWare(
 
       const isCahedExsit = await redis.get(courseId);
       if (isCahedExsit) {
-        const courseCachedData = JSON.parse(isCahedExsit);
+        const courses = JSON.parse(isCahedExsit);
 
         res.status(200).json({
           success: true,
-          courseCachedData,
+          courses,
         });
       } else {
         const course = await CourseModel.findById(courseId).select(
@@ -123,11 +124,11 @@ export const getAllleCourse = catchAsyncErroMiddleWare(
     try {
       const isCahedExsit = await redis.get("all-courses");
       if (isCahedExsit) {
-        const courseCachedData = JSON.parse(isCahedExsit);
+        const courses = JSON.parse(isCahedExsit);
 
         res.status(200).json({
           success: true,
-          courseCachedData,
+          courses,
         });
       } else {
         const course = await CourseModel.find({}).select(
@@ -311,8 +312,8 @@ export const addAnswer = catchAsyncErroMiddleWare(
 // addreview
 
 interface IAddReview {
-  review: number;
-  rating: string;
+  reviews: number;
+  ratings: string;
   userId: string;
 }
 
@@ -320,27 +321,22 @@ export const addReview = catchAsyncErroMiddleWare(
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const userCourseList = req.user?.courses;
-      const courseId = req.user?._id;
+      const courseId = req.params.id;
 
-      const courseExsit = userCourseList?.some(
-        (course) => (course._id as string) === (courseId as string)
-      );
+      userCourseList?.find((Id: any) => {
+        Id?._Id.toString() === courseId.toString();
+      });
 
-      if (!courseExsit)
-        return next(
-          new ErrorHandler("Access to these resources is restricted", 400)
-        );
-
-      const course = await CourseModel.findById(courseId);
+      const course = await CourseModel.findById(courseId!);
 
       if (!course) return next(new ErrorHandler("Failed to get course", 400));
 
-      const { review, rating } = req.body as IAddReview;
+      const { reviews, ratings } = req.body as IAddReview;
 
       const addData = {
         user: req.user,
-        rating,
-        comment: review,
+        ratings,
+        comment: reviews,
       } as any;
 
       course.reviews.push(addData);
@@ -351,8 +347,10 @@ export const addReview = catchAsyncErroMiddleWare(
         avg += rev.ratings;
       });
 
-      if (course) {
-        course.ratings = avg / course.reviews.length;
+      if (course.ratings && course.reviews.length > 0) {
+        course.ratings = parseFloat(
+          (avg / Math.floor(course.reviews.length)).toFixed(2)
+        );
       }
 
       await course.save();
@@ -366,6 +364,47 @@ export const addReview = catchAsyncErroMiddleWare(
         success: true,
         course,
       });
+    } catch (error: any) {
+      return next(new ErrorHandler(error.message, 400));
+    }
+  }
+);
+
+// comment to review
+
+interface IAddReviewComment {
+  comment: string;
+  courseId: string;
+  reviewId: string;
+}
+
+export const addCommenToReview = catchAsyncErroMiddleWare(
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { comment, courseId, reviewId } = req.body as IAddReviewComment;
+      console.log({ reviesID: reviewId });
+
+      const course = await CourseModel.findById(courseId);
+
+      if (!course) return next(new ErrorHandler("Invalide course ID", 400));
+
+      const reviews = course.reviews?.find((review: any) => {
+        return review._id.toString() === reviewId.toString();
+      });
+      console.log({ reviesIDs: reviews?._id });
+
+      if (!reviews || course.reviews.length === 0)
+        return next(new ErrorHandler("Invalide review ID", 400));
+
+      const addCommentToReviews = {
+        user: req.user,
+        comment,
+      };
+
+      course.reviews.push(addCommentToReviews as any);
+      course.save();
+
+      res.status(200).json({ success: true, course });
     } catch (error: any) {
       return next(new ErrorHandler(error.message, 400));
     }

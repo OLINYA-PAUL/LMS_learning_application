@@ -165,7 +165,7 @@ export const loginUser = catchAsyncErroMiddleWare(
       }
 
       // This method will throw an error if the password doesn't match
-      await user.CompareUserPassword(password);
+      (await user.CompareUserPassword(password)) ?? null;
 
       sendToken(user, 200, res);
     } catch (error: any) {
