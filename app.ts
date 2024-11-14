@@ -8,6 +8,8 @@ import cookieParser from "cookie-parser";
 import { errorMiddleWareHandler } from "./middleware/error";
 import userRoute from "./routes/user.routes";
 import courseRoute from "./routes/course.routes";
+import orderRoute from "./routes/order.routes";
+import notificationRoutes from "./routes/notification.routes";
 
 // Initialize Express App
 const app = express();
@@ -31,8 +33,7 @@ app.get("/test", (req: Request, res: Response) => {
   res.status(200).json({ success: true, message: "User created successfully" });
 });
 
-app.use("/api/v1", userRoute);
-app.use("/api/v1", courseRoute);
+app.use("/api/v1", userRoute, courseRoute, orderRoute, notificationRoutes);
 
 // 404 Route Handler
 app.get("*", (req: Request, res: Response) => {

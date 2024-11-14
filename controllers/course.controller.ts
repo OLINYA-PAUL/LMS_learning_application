@@ -9,6 +9,7 @@ import path from "path";
 import ejs from "ejs";
 import { sendEmail } from "../utils/sendMail";
 import { idText } from "typescript";
+import { notificationModel } from "../models/notification.model";
 const createRedisClient = require("../utils/redis");
 
 const redis = createRedisClient();
@@ -155,18 +156,18 @@ export const getAllleCourse = catchAsyncErroMiddleWare(
 export const getCourseByUser = catchAsyncErroMiddleWare(
   async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const getUserCourse = req.user?.courses;
+      const getUserCourse = req.user?.courses!;
       const courseId = req.params.id;
 
-      const findUserCourse = getUserCourse?.find(
-        (course) => course._id === courseId
-      );
+      const findUserCourse = getUserCourse?.find((course) => {
+        return course._id?.toString() === courseId.toString();
+      });
 
-      if (!findUserCourse) {
-        return next(
-          new ErrorHandler("You are not authorized to view this content", 400)
-        );
-      }
+      // if (!findUserCourse) {
+      //   return next(
+      //     new ErrorHandler("You are not authorized to view this content", 400)
+      //   );
+      // }
 
       const courseContent = await CourseModel.findById(courseId);
       if (!courseContent) {
@@ -215,6 +216,12 @@ export const addQuestions = catchAsyncErroMiddleWare(
       };
 
       courseContent?.question.push(addnewQuestion as any);
+
+      await notificationModel.create({
+        userId: req.user?._id,
+        title: "New Question Received",
+        message: `You have a new question from: ${courseContent?.title}`,
+      });
 
       await course.save();
 
@@ -273,8 +280,11 @@ export const addAnswer = catchAsyncErroMiddleWare(
       await course.save();
 
       if (req.user?._id === question.user._id) {
-        // await sendNotification()
-        console.log("notification............");
+        await notificationModel.create({
+          userId: req.user?._id,
+          title: "New Question Reply",
+          message: `You have a new question from: ${courseContent?.title}`,
+        });
       } else {
         const data = {
           name: req.user?.name,

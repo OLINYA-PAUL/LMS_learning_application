@@ -141,6 +141,6 @@ const courseSchema = new Schema<ICourse>(
 );
 
 export const CourseModel: Model<ICourse> = mongoose.model(
-  "courseSchema",
+  "courses",
   courseSchema
 );
