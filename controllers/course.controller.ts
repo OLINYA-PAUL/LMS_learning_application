@@ -2,13 +2,12 @@ import { catchAsyncErroMiddleWare } from "../middleware/catchAsyncErrors";
 import { Request, Response, NextFunction } from "express";
 import cloudinary from "cloudinary";
 import ErrorHandler from "../utils/errorHandler";
-import { createCourse } from "../services/course.service";
+import { createCourse, getAllUsersCourses } from "../services/course.service";
 import { CourseModel } from "../models/course.model";
 import mongoose from "mongoose";
 import path from "path";
 import ejs from "ejs";
 import { sendEmail } from "../utils/sendMail";
-import { idText } from "typescript";
 import { notificationModel } from "../models/notification.model";
 const createRedisClient = require("../utils/redis");
 
@@ -65,7 +64,7 @@ export const updateCourse = catchAsyncErroMiddleWare(
       const course = await CourseModel.findByIdAndUpdate(
         courseId,
         { $set: data },
-        { new: true }
+        { new: true, upsert: true }
       );
 
       if (!course) {
@@ -106,7 +105,8 @@ export const getSingleCourse = catchAsyncErroMiddleWare(
           return next(new ErrorHandler("No course to show", 400));
         }
 
-        await redis.set(courseId, JSON.stringify(course));
+        await redis.set(courseId, JSON.stringify(course), "EX", 604800);
+
         res.status(200).json({
           success: true,
           course,
@@ -392,7 +392,6 @@ export const addCommenToReview = catchAsyncErroMiddleWare(
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const { comment, courseId, reviewId } = req.body as IAddReviewComment;
-      console.log({ reviesID: reviewId });
 
       const course = await CourseModel.findById(courseId);
 
@@ -421,5 +420,40 @@ export const addCommenToReview = catchAsyncErroMiddleWare(
     } catch (error: any) {
       return next(new ErrorHandler(error.message, 400));
     }
+  }
+);
+
+export const getAllCourses = catchAsyncErroMiddleWare(
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      await getAllUsersCourses(res, next);
+    } catch (error: any) {
+      return next(new ErrorHandler(error.message, 400));
+    }
+  }
+);
+
+export const deleteCourse = catchAsyncErroMiddleWare(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const { id } = req.params;
+
+    // Check if the authenticated user is an admin
+    if (req.user?.role !== "admin") {
+      return next(new ErrorHandler("Not authorized to delete Course", 403));
+    }
+
+    // Use the provided `id` from the request body for deletion
+    const user = await CourseModel.findByIdAndDelete(id);
+
+    if (!user) {
+      return next(new ErrorHandler("No user with such ID", 404));
+    }
+
+    await redis.del(id);
+
+    res.status(200).json({
+      success: true,
+      message: "Course deleted successfully",
+    });
   }
 );

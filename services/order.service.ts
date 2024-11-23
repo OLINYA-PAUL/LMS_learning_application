@@ -20,3 +20,17 @@ export const createNewOrder = catchAsyncErroMiddleWare(
     }
   }
 );
+
+export const getAllUsersOrders = async (res: Response, next: NextFunction) => {
+  try {
+    const users = await OrderModel.find({}).sort({ createdAt: -1 });
+    if (!users) return "No Orders found";
+
+    res.status(200).json({
+      success: true,
+      users,
+    });
+  } catch (error: any) {
+    return next(new errorHandler(error.message, 400));
+  }
+};

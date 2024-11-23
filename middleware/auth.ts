@@ -28,9 +28,9 @@ export const isAuthenticated = catchAsyncErroMiddleWare(
     }
 
     const user = await redis.get(decoded.id);
-    console.log("Authenticated user role:", user);
+
     if (!user) {
-      return next(new ErrorHandler("user not found", 404));
+      return next(new ErrorHandler("Login to access this resources", 404));
     }
 
     req.user = JSON.parse(user);

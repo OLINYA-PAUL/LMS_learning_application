@@ -5,12 +5,15 @@ import {
   addCommenToReview,
   addQuestions,
   addReview,
+  deleteCourse,
+  getAllCourses,
   getAllleCourse,
   getCourseByUser,
   getSingleCourse,
   updateCourse,
   uploadCourse,
 } from "../controllers/course.controller";
+import { getCoursesAnalysis } from "../controllers/analysis.controller";
 
 const courseRoute = express.Router();
 
@@ -37,6 +40,27 @@ courseRoute.put(
   isAuthenticated,
   authoriseUserRole("admin"),
   addCommenToReview
+);
+
+courseRoute.get(
+  "/get-all-courses",
+  isAuthenticated,
+  authoriseUserRole("admin"),
+  getAllCourses
+);
+
+courseRoute.delete(
+  "/delete-course/:id",
+  isAuthenticated,
+  authoriseUserRole("admin"),
+  deleteCourse
+);
+
+courseRoute.get(
+  "/courses-analysis",
+  isAuthenticated,
+  authoriseUserRole("admin"),
+  getCoursesAnalysis
 );
 
 export default courseRoute;

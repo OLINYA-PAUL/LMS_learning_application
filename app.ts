@@ -10,6 +10,8 @@ import userRoute from "./routes/user.routes";
 import courseRoute from "./routes/course.routes";
 import orderRoute from "./routes/order.routes";
 import notificationRoutes from "./routes/notification.routes";
+import analysisRoute from "./routes/analysis.routes";
+import layoutRoute from "./routes/layouts.routes";
 
 // Initialize Express App
 const app = express();
@@ -33,7 +35,15 @@ app.get("/test", (req: Request, res: Response) => {
   res.status(200).json({ success: true, message: "User created successfully" });
 });
 
-app.use("/api/v1", userRoute, courseRoute, orderRoute, notificationRoutes);
+app.use(
+  "/api/v1",
+  userRoute,
+  courseRoute,
+  orderRoute,
+  notificationRoutes,
+  analysisRoute,
+  layoutRoute
+);
 
 // 404 Route Handler
 app.get("*", (req: Request, res: Response) => {

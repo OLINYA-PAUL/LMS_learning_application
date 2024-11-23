@@ -15,7 +15,11 @@ import {
   refreshTokenOptions,
   sendToken,
 } from "../utils/JWT";
-import { getUserByID } from "../services/severices";
+import {
+  getAllUsersServices,
+  getUserByID,
+  updateUsersRollesService,
+} from "../services/user.service";
 const createRedisClient = require("../utils/redis");
 
 interface IregisterUser {
@@ -215,7 +219,9 @@ export const updateAccessToken = catchAsyncErroMiddleWare(
 
       const session = await redis.get(decoded.id);
       if (!session) {
-        return next(new ErrorHandler("User session expired or invalid", 401));
+        return next(
+          new ErrorHandler("Please login to access this resources", 401)
+        );
       }
 
       let user;
@@ -241,6 +247,8 @@ export const updateAccessToken = catchAsyncErroMiddleWare(
 
       res.cookie("access_token", accessToken, accessTokenOptions);
       res.cookie("refresh_token", refreshToken, refreshTokenOptions);
+
+      await redis.set(user._id, JSON.stringify(user._id), "EX", 604800);
 
       res.status(200).json({ status: "success", accessToken });
     } catch (error: any) {
@@ -309,7 +317,7 @@ export const updateUserInfo = catchAsyncErroMiddleWare(
       const userId = req.user?._id;
 
       const user = await UserModel.findById(userId);
-      if (email && user) {
+      if (user && email) {
         const isEmailExsit = await UserModel.findOne({ email });
         if (isEmailExsit) {
           return next(new ErrorHandler("Email is already exsit", 400));
@@ -396,7 +404,7 @@ export const updateUserAvatar = catchAsyncErroMiddleWare(
       const userId = req.user?._id;
 
       const user = await UserModel.findById(userId);
-      if (!user) return null;
+      if (!user) return next(new ErrorHandler("No user found", 400));
 
       if (avatar && user) {
         // first delete user avatar
@@ -443,5 +451,66 @@ export const updateUserAvatar = catchAsyncErroMiddleWare(
     } catch (error: any) {
       return next(new ErrorHandler(error.message, 400));
     }
+  }
+);
+
+// get all users
+export const getAllUsers = catchAsyncErroMiddleWare(
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      await getAllUsersServices(res, next);
+    } catch (error: any) {
+      return next(new ErrorHandler(error.message, 400));
+    }
+  }
+);
+
+// updates user roles
+
+interface IUserRoles {
+  id: string;
+  role: string;
+}
+
+export const updateUsersRolles = catchAsyncErroMiddleWare(
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { id, role } = req.body as IUserRoles;
+
+      await updateUsersRollesService(res, id, role, next);
+    } catch (error: any) {
+      return next(new ErrorHandler(error.message, 400));
+    }
+  }
+);
+
+//delete users
+
+interface IDeleteUser {
+  id: string;
+}
+
+export const deleteUsers = catchAsyncErroMiddleWare(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const { id } = req.params;
+
+    // Check if the authenticated user is an admin
+    if (req.user?.role !== "admin") {
+      return next(new ErrorHandler("Not authorized to delete users", 403));
+    }
+
+    // Use the provided `id` from the  params for deletion
+    const user = await UserModel.findByIdAndDelete(id);
+
+    if (!user) {
+      return next(new ErrorHandler("No user with such ID", 404));
+    }
+
+    await redis.del(id);
+
+    res.status(200).json({
+      success: true,
+      message: "User deleted successfully",
+    });
   }
 );

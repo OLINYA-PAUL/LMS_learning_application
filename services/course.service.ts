@@ -22,3 +22,17 @@ export const createCourse = catchAsyncErroMiddleWare(
     }
   }
 );
+
+export const getAllUsersCourses = async (res: Response, next: NextFunction) => {
+  try {
+    const course = await CourseModel.find({}).sort({ createdAt: -1 });
+    if (!course) return "No Courses found";
+
+    res.status(200).json({
+      success: true,
+      course,
+    });
+  } catch (error: any) {
+    return next(new errorHandler(error.message, 400));
+  }
+};

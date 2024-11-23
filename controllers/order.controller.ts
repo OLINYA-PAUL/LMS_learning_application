@@ -1,15 +1,18 @@
 import { Response, Request, NextFunction } from "express";
+const createRedisClient = require("../utils/redis");
 import { catchAsyncErroMiddleWare } from "../middleware/catchAsyncErrors";
 import { UserModel } from "../models/user.models";
 import { sendEmail } from "../utils/sendMail";
 import ErrorHandler from "../utils/errorHandler";
-import { IOrder } from "../models/order.model";
+import { IOrder, OrderModel } from "../models/order.model";
 import { CourseModel } from "../models/course.model";
 import path from "path";
 import EJS from "ejs";
-import { createNewOrder } from "../services/order.service";
+import { createNewOrder, getAllUsersOrders } from "../services/order.service";
 import { notificationModel } from "../models/notification.model";
 import mongoose from "mongoose";
+
+const redis = createRedisClient();
 
 // Helper to check if user already purchased the course
 const checkUserCourseOwnership = (
@@ -120,5 +123,40 @@ export const createOrder = catchAsyncErroMiddleWare(
     // Create a new order record
 
     await createNewOrder(orderData, res, next);
+  }
+);
+
+export const getAllOrders = catchAsyncErroMiddleWare(
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      await getAllUsersOrders(res, next);
+    } catch (error: any) {
+      return next(new ErrorHandler(error.message, 400));
+    }
+  }
+);
+
+export const deleteOrders = catchAsyncErroMiddleWare(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const { id } = req.params;
+
+    // Check if the authenticated user is an admin
+    if (req.user?.role !== "admin") {
+      return next(new ErrorHandler("Not authorized to delete Order", 403));
+    }
+
+    // Use the provided `id` from the request body for deletion
+    const user = await OrderModel.findByIdAndDelete(id);
+
+    if (!user) {
+      return next(new ErrorHandler("No user with such ID", 404));
+    }
+
+    await redis.del(id);
+
+    res.status(200).json({
+      success: true,
+      message: "Orders deleted successfully",
+    });
   }
 );
