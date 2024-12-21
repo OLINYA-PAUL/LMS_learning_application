@@ -20,6 +20,7 @@ import {
   getUserByID,
   updateUsersRollesService,
 } from "../services/user.service";
+import axios from "axios";
 const createRedisClient = require("../utils/redis");
 
 interface IregisterUser {
@@ -45,7 +46,7 @@ export const registerationUser = catchAsyncErroMiddleWare(
     }
 
     // Validate password length BEFORE hashing
-    if (password.length < 6) {
+    if (password.length < 8) {
       return res.status(400).json({
         success: false,
         error: "Password must be between 6 and 10 characters long.",
@@ -109,20 +110,21 @@ const createActivationToken = (user: any): activationToken => {
 
 interface IactivationToken {
   activation_token: string;
-  actvation_code: string;
+  activation_code: string;
 }
 
 export const activateUser = catchAsyncErroMiddleWare(
   async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const { activation_token, actvation_code } = req.body as IactivationToken;
+      const { activation_token, activation_code } =
+        req.body as IactivationToken;
 
       const newUser: { user: Iuser; activationCode: string } = jwt.verify(
         activation_token,
         process.env.ACTIVATION_SECRET as Secret // Secret key
       ) as { user: Iuser; activationCode: string };
 
-      if (newUser.activationCode !== actvation_code) {
+      if (newUser.activationCode !== activation_code) {
         return next(new ErrorHandler("invalide activation code entered", 500)); // Catch and forward email sending error
       }
 
@@ -141,9 +143,10 @@ export const activateUser = catchAsyncErroMiddleWare(
       });
 
       await user.save();
-      res
-        .status(201)
-        .json({ sucess: true, message: "user created successfully 💖" });
+      res.status(201).json({
+        sucess: true,
+        message: "Your account have been created successfully 💖",
+      });
     } catch (error: any) {
       return next(new ErrorHandler(error.message, 500)); // Catch and forward email sending error
     }
@@ -171,7 +174,7 @@ export const loginUser = catchAsyncErroMiddleWare(
       }
 
       // This method will throw an error if the password doesn't match
-      (await user.CompareUserPassword(password)) ?? null;
+      (await user.CompareUserPassword(password)) || "";
 
       sendToken(user, 200, res);
     } catch (error: any) {
@@ -219,9 +222,13 @@ export const updateAccessToken = catchAsyncErroMiddleWare(
 
       const session = await redis.get(decoded.id);
       if (!session) {
-        return next(
-          new ErrorHandler("Please login to access this resources", 401)
-        );
+        const sessionDb = await UserModel.findById(decoded.id);
+
+        if (!sessionDb) {
+          return next(
+            new ErrorHandler("Please login to access this resource", 401)
+          );
+        }
       }
 
       let user;
@@ -231,25 +238,30 @@ export const updateAccessToken = catchAsyncErroMiddleWare(
         return next(new ErrorHandler("Invalid session data", 500));
       }
 
+      // Create new access token (expires in 5 minutes)
       const accessToken = jwt.sign(
         { id: user._id },
-        (process.env.ACCESS_TOKEN as string) ?? "",
+        process.env.ACCESS_TOKEN as string,
         { expiresIn: "5m" }
       );
 
+      // Create new refresh token (expires in 3 days)
       const refreshToken = jwt.sign(
         { id: user._id },
-        (process.env.REFRESH_TOKEN as string) ?? "",
+        process.env.REFRESH_TOKEN as string,
         { expiresIn: "3d" }
       );
 
       req.user = user;
 
+      // Send the new access and refresh tokens in the cookies
       res.cookie("access_token", accessToken, accessTokenOptions);
       res.cookie("refresh_token", refreshToken, refreshTokenOptions);
 
+      // Update Redis session expiry to 7 days
       await redis.set(user._id, JSON.stringify(user._id), "EX", 604800);
 
+      // Respond with the new access token
       res.status(200).json({ status: "success", accessToken });
     } catch (error: any) {
       return next(new ErrorHandler(error.message, 400));
@@ -262,9 +274,17 @@ export const updateAccessToken = catchAsyncErroMiddleWare(
 export const getUserInfo = catchAsyncErroMiddleWare(
   async (req: Request, res: Response, next: NextFunction) => {
     try {
-      await getUserByID(req.user?._id as string, res, next);
+      const userId = req.user?._id;
+      console.log({ userID: userId });
+      if (!userId) {
+        return res
+          .status(400)
+          .json({ success: false, message: "User ID is missing" });
+      }
+
+      await getUserByID(userId as string, res, next); // Pass res and next to handle response and error
     } catch (error: any) {
-      return next(new ErrorHandler(error.message, 400));
+      return next(new ErrorHandler(error.message, 400)); // Catch and pass errors to the error handler
     }
   }
 );
@@ -313,18 +333,18 @@ interface IupdateUserInfo {
 export const updateUserInfo = catchAsyncErroMiddleWare(
   async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const { name, email } = req.body as IupdateUserInfo;
+      const { name } = req.body as IupdateUserInfo;
       const userId = req.user?._id;
 
       const user = await UserModel.findById(userId);
-      if (user && email) {
-        const isEmailExsit = await UserModel.findOne({ email });
-        if (isEmailExsit) {
-          return next(new ErrorHandler("Email is already exsit", 400));
-        }
+      // if (user && email) {
+      //   const isEmailExsit = await UserModel.findOne({ email });
+      //   if (isEmailExsit) {
+      //     return next(new ErrorHandler("Email is already exsit", 400));
+      //   }
 
-        user.email = email;
-      }
+      //   user.email = email;
+      // }
 
       if (name && user) {
         user.name = name;
@@ -354,9 +374,9 @@ interface IupdateUserPassword {
 export const updateUserPassword = catchAsyncErroMiddleWare(
   async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const { newpassword, oldpassword } = req.body as IupdateUserPassword;
+      const { oldpassword, newpassword } = req.body as IupdateUserPassword;
 
-      if (!(newpassword || oldpassword)) {
+      if (!(oldpassword || newpassword)) {
         return next(
           new ErrorHandler("Please enter both old and new password", 400)
         );
@@ -514,3 +534,5 @@ export const deleteUsers = catchAsyncErroMiddleWare(
     });
   }
 );
+
+

@@ -1,3 +1,5 @@
+require("dotenv").config();
+
 import { catchAsyncErroMiddleWare } from "../middleware/catchAsyncErrors";
 import { Request, Response, NextFunction } from "express";
 import cloudinary from "cloudinary";
@@ -10,6 +12,7 @@ import ejs from "ejs";
 import { sendEmail } from "../utils/sendMail";
 import { notificationModel } from "../models/notification.model";
 const createRedisClient = require("../utils/redis");
+import axios from "axios";
 
 const redis = createRedisClient();
 
@@ -455,5 +458,62 @@ export const deleteCourse = catchAsyncErroMiddleWare(
       success: true,
       message: "Course deleted successfully",
     });
+  }
+);
+
+export const generateVideoUrl = catchAsyncErroMiddleWare(
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { videoID } = req.body;
+      if (!videoID) return next(new ErrorHandler("Video ID is required", 400));
+
+      
+      // Ensure API Secret exists 
+      
+      const apiSecret = "yJ4t1FKEVaeFZR7kv45Q52Ci498YNetpTjDREGig4d4yvnOAUXZZYgiXCt5I4Bup";
+      if (!apiSecret) {
+        throw new Error(
+          "VIDCIPHER_API_SECRET is not set in the environment variables"
+        );
+      }
+
+      const response = await axios.post(
+        `https://dev.vdocipher.com/api/videos/${videoID}/otp`,
+        { ttl: 300 }, 
+        {
+          headers: {
+            Accept: "application/json",
+            "Content-Type": "application/json",
+            Authorization: `Apisecret ${apiSecret}`,
+          },
+        }
+      );
+
+      if (response.status !== 200) {
+        throw new Error(`Failed to generate OTP: ${response.statusText}`);
+      }
+
+      const { otp, playbackInfo } = response.data;
+
+      if (!otp || !playbackInfo) {
+        throw new Error(
+          "OTP or Playback information is missing in the response"
+        );
+      }
+
+      res.status(200).json({
+        success: true,
+        otp,
+        playbackInfo,
+      });
+    } catch (error: any) {
+      console.error(
+        "Error generating VideoCipher OTP:",
+        error.response?.data || error.message
+      );
+      return next(
+        new ErrorHandler(error.response?.data?.message || error.message, 400)
+      );
+    }
   }
 );

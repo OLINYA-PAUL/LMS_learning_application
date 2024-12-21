@@ -9,14 +9,31 @@ export const getUserByID = async (
   next: NextFunction
 ) => {
   const redis = createRedisClient();
+
   try {
+    // Check Redis for the user
     const redisUser = await redis.get(id);
+
     if (redisUser) {
       const user = JSON.parse(redisUser);
-      res.status(200).json({ success: true, user });
+      return res.status(200).json({ success: true, user });
     }
+
+    // If not found in Redis, fetch from the database
+    const userFromDb = await UserModel.findById(id);
+
+    if (!userFromDb) {
+      return res
+        .status(404)
+        .json({ success: false, message: "User not found" });
+    }
+
+    // Store in Redis for future requests (1 hour TTL)
+    await redis.set(id, JSON.stringify(userFromDb), "EX", 3600);
+
+    return res.status(200).json({ success: true, user: userFromDb });
   } catch (error: any) {
-    return next(new errorHandler(error.message, 400));
+    next(new errorHandler(`Failed to fetch user: ${error.message}`, 500));
   }
 };
 

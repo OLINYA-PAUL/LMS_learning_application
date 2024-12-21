@@ -12,6 +12,7 @@ import {
   getSingleCourse,
   updateCourse,
   uploadCourse,
+  generateVideoUrl,
 } from "../controllers/course.controller";
 import { getCoursesAnalysis } from "../controllers/analysis.controller";
 
@@ -62,5 +63,7 @@ courseRoute.get(
   authoriseUserRole("admin"),
   getCoursesAnalysis
 );
+
+courseRoute.post("/getVideoCipherOtp-url", generateVideoUrl);
 
 export default courseRoute;

@@ -19,9 +19,23 @@ const app = express();
 // Middlewares
 app.use(cookieParser());
 app.use(express.json({ limit: "50mb" }));
+app.use(express.urlencoded({ extended: true }));
+
+let allowedOrigins = ["http://localhost:3000", "http://localhost:3001"];
+
+// if (process.env.ALLOWED_CORS_ORIGINS) {
+//   allowedOrigins = process.env.ALLOWED_CORS_ORIGINS;
+// }
+
 app.use(
   cors({
-    origin: process.env.ORIGIN || "http://localhost:3000", // Fallback to localhost
+    origin: (origin, callback) => {
+      if (!origin || allowedOrigins?.includes(origin)) {
+        callback(null, true); // Allow if the origin is in the list or it's a non-CORS request
+      } else {
+        callback(new Error("Not allowed by CORS")); // Reject other origins
+      }
+    },
     methods: ["GET", "POST", "PUT", "DELETE"],
     allowedHeaders: ["Authorization", "Content-Type"],
     credentials: true,

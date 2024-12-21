@@ -107,7 +107,7 @@ userSchema.methods.SignRefreshToken = function () {
   return JWT.sign(
     { id: this._id },
     (process.env.REFRESH_TOKEN as string) || "",
-    { expiresIn: "5m" }
+    { expiresIn: "3d" }
   );
 };
 

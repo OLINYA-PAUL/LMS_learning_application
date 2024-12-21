@@ -20,24 +20,33 @@ const refreshTokenExpire = parseInt(
   process.env.REFRESH_TOKEN_EXPIRE || "1200",
   10
 );
+
 // Options for cookies
 export const accessTokenOptions: ItokenCookieOptions = {
   expires: new Date(Date.now() + accessTokenExpire * 60 * 60 * 1000),
   httpOnly: true,
+  sameSite: "lax",
   maxAge: accessTokenExpire * 60 * 60 * 1000,
-  sameSite: process.env.NODE_ENV === "production" ? "lax" : "strict",
 };
+
+// export const accessTokenOptions: ItokenCookieOptions = {
+//   expires: new Date(Date.now() + 5 * 60 * 1000), // 5 minutes to ms
+//   httpOnly: true,
+//   maxAge: 5 * 60 * 1000, // 5 minutes to ms
+//   sameSite: process.env.NODE_ENV === "production" ? "lax" : "strict",
+// };
 
 export const refreshTokenOptions: ItokenCookieOptions = {
   expires: new Date(Date.now() + refreshTokenExpire * 24 * 60 * 60 * 1000),
   httpOnly: true,
+  sameSite: "lax",
   maxAge: refreshTokenExpire * 24 * 60 * 60 * 1000,
-  sameSite: process.env.NODE_ENV === "production" ? "lax" : "strict",
 };
 
 export const sendToken = (user: Iuser, statusCode: number, res: Response) => {
   const redis = createRedisClient();
   try {
+    const { password, ...arg } = user;
     const access_token = user.SignAccessToken();
     const refresh_token = user.SignRefreshToken();
 
@@ -64,8 +73,8 @@ export const sendToken = (user: Iuser, statusCode: number, res: Response) => {
 
     res.status(statusCode).json({
       success: true,
-      message: "Token sent successfully 😂",
-      user,
+      message: "You have login successfully 😂",
+      arg,
       access_token,
     });
   } catch (error) {
