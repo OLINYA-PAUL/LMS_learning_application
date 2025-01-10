@@ -84,7 +84,6 @@ export const createOrder = catchAsyncErroMiddleWare(
 
     // Check if user already owns the course
     if (checkUserCourseOwnership(user.courses, courseId)) {
-      console.log({ PURCHASEDiD: courseId });
       return next(
         new ErrorHandler("You have already purchased this course", 400)
       );
@@ -114,7 +113,7 @@ export const createOrder = catchAsyncErroMiddleWare(
     user.courses.push(course._id);
     await user.save();
 
-    course.purchased
+    course.purchased = course.purchased
       ? Number((course.purchased += 1))
       : Number(course.purchased);
 

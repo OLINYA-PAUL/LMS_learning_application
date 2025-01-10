@@ -205,6 +205,7 @@ export const updateAccessToken = catchAsyncErroMiddleWare(
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const refresh_token = req.cookies.refresh_token;
+      console.log("refresh_token", { refresh_token });
 
       if (!refresh_token) {
         return next(new ErrorHandler("Refresh token not provided", 401));
@@ -261,8 +262,11 @@ export const updateAccessToken = catchAsyncErroMiddleWare(
       // Update Redis session expiry to 7 days
       await redis.set(user._id, JSON.stringify(user._id), "EX", 604800);
 
-      // Respond with the new access token
-      res.status(200).json({ status: "success", accessToken });
+      res.status(200).json({
+        success: true,
+        accessToken,
+      });
+      next();
     } catch (error: any) {
       return next(new ErrorHandler(error.message, 400));
     }
@@ -534,5 +538,3 @@ export const deleteUsers = catchAsyncErroMiddleWare(
     });
   }
 );
-
-

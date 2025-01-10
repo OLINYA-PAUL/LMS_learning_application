@@ -15,17 +15,20 @@ import {
   generateVideoUrl,
 } from "../controllers/course.controller";
 import { getCoursesAnalysis } from "../controllers/analysis.controller";
+import { updateAccessToken } from "../controllers/user.controller";
 
 const courseRoute = express.Router();
 
 courseRoute.post(
   "/create-course",
+  updateAccessToken,
   isAuthenticated,
   authoriseUserRole("admin"),
   uploadCourse
 );
 courseRoute.put(
   "/update-course/:id",
+  updateAccessToken,
   isAuthenticated,
   authoriseUserRole("admin"),
   updateCourse

@@ -26,12 +26,28 @@ userRoute.post("/login-user", loginUser);
 userRoute.post("/social-auth", socialAuth);
 userRoute.get("/logout-user", isAuthenticated, logOutUser);
 userRoute.get("/refresh-token", isAuthenticated, updateAccessToken);
-userRoute.get("/me", isAuthenticated, getUserInfo);
-userRoute.put("/updateuser-info", isAuthenticated, updateUserInfo);
-userRoute.put("/updateuser-password", isAuthenticated, updateUserPassword);
-userRoute.put("/updateuser-avatar", isAuthenticated, updateUserAvatar);
+userRoute.get("/me", updateAccessToken, isAuthenticated, getUserInfo);
+userRoute.put(
+  "/updateuser-info",
+  updateAccessToken,
+  isAuthenticated,
+  updateUserInfo
+);
+userRoute.put(
+  "/updateuser-password",
+  updateAccessToken,
+  isAuthenticated,
+  updateUserPassword
+);
+userRoute.put(
+  "/updateuser-avatar",
+  updateAccessToken,
+  isAuthenticated,
+  updateUserAvatar
+);
 userRoute.get(
   "/get-all-users",
+  updateAccessToken,
   isAuthenticated,
   authoriseUserRole("admin"),
   getAllUsers
@@ -39,6 +55,7 @@ userRoute.get(
 
 userRoute.put(
   "/update-users-roles",
+  updateAccessToken,
   isAuthenticated,
   authoriseUserRole("admin"),
   updateUsersRolles
@@ -46,6 +63,7 @@ userRoute.put(
 
 userRoute.delete(
   "/delete-users/:id",
+  updateAccessToken,
   isAuthenticated,
   authoriseUserRole("admin"),
   deleteUsers
@@ -53,6 +71,7 @@ userRoute.delete(
 
 userRoute.get(
   "/users-analysis",
+  updateAccessToken,
   isAuthenticated,
   authoriseUserRole("admin"),
   getUsersAnalysis
