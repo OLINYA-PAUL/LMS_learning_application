@@ -12,41 +12,34 @@ interface ItokenCookieOptions {
 }
 
 // Expiration times (in milliseconds)
-const accessTokenExpire = parseInt(
-  process.env.ACCESS_TOKEN_EXPIRE || "300",
-  10
-);
+const accessTokenExpire = parseInt(process.env.ACCESS_TOKEN_EXPIRE || "1", 10); // 1 hour
 const refreshTokenExpire = parseInt(
-  process.env.REFRESH_TOKEN_EXPIRE || "1200",
+  process.env.REFRESH_TOKEN_EXPIRE || "3",
   10
-);
+); // 3 days
 
-// Options for cookies
 export const accessTokenOptions: ItokenCookieOptions = {
-  expires: new Date(Date.now() + accessTokenExpire * 60 * 60 * 1000),
+  expires: new Date(Date.now() + accessTokenExpire * 60 * 60 * 1000), // 1h
   httpOnly: true,
-  sameSite: "lax",
-  maxAge: accessTokenExpire * 60 * 60 * 1000,
+  sameSite: process.env.NODE_ENV === "production" ? "lax" : "strict",
+  maxAge: accessTokenExpire * 60 * 60 * 1000, // 1h
 };
-
-// export const accessTokenOptions: ItokenCookieOptions = {
-//   expires: new Date(Date.now() + 5 * 60 * 1000), // 5 minutes to ms
-//   httpOnly: true,
-//   maxAge: 5 * 60 * 1000, // 5 minutes to ms
-//   sameSite: process.env.NODE_ENV === "production" ? "lax" : "strict",
-// };
 
 export const refreshTokenOptions: ItokenCookieOptions = {
-  expires: new Date(Date.now() + refreshTokenExpire * 24 * 60 * 60 * 1000),
+  expires: new Date(Date.now() + refreshTokenExpire * 24 * 60 * 60 * 1000), // 3d
   httpOnly: true,
-  sameSite: "lax",
-  maxAge: refreshTokenExpire * 24 * 60 * 60 * 1000,
+  sameSite: process.env.NODE_ENV === "production" ? "lax" : "strict",
+  maxAge: refreshTokenExpire * 24 * 60 * 60 * 1000, // 3d
 };
 
-export const sendToken = (user: Iuser, statusCode: number, res: Response) => {
+export const sendToken = async (
+  user: Iuser,
+  statusCode: number,
+  res: Response
+) => {
   const redis = createRedisClient();
   try {
-    const { password, ...arg } = user;
+    // const { password, ...arg } = user.toObject();
     const access_token = user.SignAccessToken();
     const refresh_token = user.SignRefreshToken();
 
@@ -55,14 +48,14 @@ export const sendToken = (user: Iuser, statusCode: number, res: Response) => {
     redis.set(user._id, JSON.stringify(user), (err: string, data: any) => {
       try {
         if (data) return data;
-        if (err) console.error("Error setting Redis data:", err);
+        if (err) console.log("Error setting Redis data:", err);
       } catch (error) {
         console.log("Caught error:", error);
       }
     });
 
     // Set secure cookies in production
-    if (process.env.NODE_ENV === "production") {
+    if (process.env.NODE_ENV === "development") {
       accessTokenOptions.secure = true;
       refreshTokenOptions.secure = true;
     }
@@ -73,15 +66,15 @@ export const sendToken = (user: Iuser, statusCode: number, res: Response) => {
 
     res.status(statusCode).json({
       success: true,
-      message: "You have login successfully 😂",
-      arg,
+      message: "account successfull",
+      user,
       access_token,
     });
   } catch (error) {
     console.error("Error sending token:", error);
     res.status(500).json({
       success: false,
-      message: "Failed to set authentication tokens",
+      message: "Failed to authenticate user",
     });
   }
 };

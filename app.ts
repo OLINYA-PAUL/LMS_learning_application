@@ -29,15 +29,16 @@ let allowedOrigins = ["http://localhost:3000", "http://localhost:3001"];
 
 app.use(
   cors({
-    origin: (origin, callback) => {
-      if (!origin || allowedOrigins?.includes(origin)) {
-        callback(null, true); // Allow if the origin is in the list or it's a non-CORS request
-      } else {
-        callback(new Error("Not allowed by CORS")); // Reject other origins
-      }
-    },
+    // origin: (origin, callback) => {
+    //   if (!origin || allowedOrigins?.includes(origin)) {
+    //     callback(null, true); // Allow if the origin is in the list or it's a non-CORS request
+    //   } else {
+    //     callback(new Error("Not allowed by CORS")); // Reject other origins
+    //   }
+    // },
+    origin: allowedOrigins,
     methods: ["GET", "POST", "PUT", "DELETE"],
-    allowedHeaders: ["Authorization", "Content-Type"],
+    allowedHeaders: ["Content-Type", "Authorization", "Cache-Control"],
     credentials: true,
     maxAge: 3600,
     optionsSuccessStatus: 204,

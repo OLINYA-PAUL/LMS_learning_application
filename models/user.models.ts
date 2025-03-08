@@ -97,7 +97,7 @@ userSchema.methods.SignAccessToken = function () {
   return JWT.sign(
     { id: this._id },
     (process.env.ACCESS_TOKEN as string) || "",
-    { expiresIn: "5m" }
+    { expiresIn: "1h" }
   );
 };
 

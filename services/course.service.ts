@@ -14,7 +14,7 @@ export const createCourse = catchAsyncErroMiddleWare(
       course.save();
       res.status(201).json({
         success: true,
-        message: "couser created successfully!",
+        message: "course uploaded successfully!",
         course,
       });
     } catch (error: any) {

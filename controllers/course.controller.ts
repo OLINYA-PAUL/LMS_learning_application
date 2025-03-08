@@ -76,7 +76,7 @@ export const updateCourse = catchAsyncErroMiddleWare(
 
       res.status(200).json({
         success: true,
-        message: "Course updated successfully 😍",
+        message: "Course updated",
         course,
       });
     } catch (error: any) {
@@ -123,32 +123,23 @@ export const getSingleCourse = catchAsyncErroMiddleWare(
 
 //get all course without purchase
 
-export const getAllleCourse = catchAsyncErroMiddleWare(
+export const getAllCourses = catchAsyncErroMiddleWare(
   async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const isCahedExsit = await redis.get("all-courses");
-      if (isCahedExsit) {
-        const courses = JSON.parse(isCahedExsit);
+
+        const courses = await CourseModel.find({}).select(
+          "-courseData.description -courseData.videoUrl -courseData.link -courseData.suggestions -courseData.questions"
+        );
+        if (!courses) {
+          return next(new ErrorHandler("No course to show", 400));
+        }
 
         res.status(200).json({
           success: true,
           courses,
         });
-      } else {
-        const course = await CourseModel.find({}).select(
-          "-courseData.description -courseData.videoUrl -courseData.link -courseData.suggestions -courseData.questions"
-        );
-        if (!course) {
-          return next(new ErrorHandler("No course to show", 400));
-        }
-
-        await redis.set("all-courses", JSON.stringify(course));
-        res.status(200).json({
-          success: true,
-          course,
-        });
       }
-    } catch (error: any) {
+    catch (error: any) {
       return next(new ErrorHandler(error.message, 400));
     }
   }
@@ -426,7 +417,7 @@ export const addCommenToReview = catchAsyncErroMiddleWare(
   }
 );
 
-export const getAllCourses = catchAsyncErroMiddleWare(
+export const getAllCoursesByUsers = catchAsyncErroMiddleWare(
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       await getAllUsersCourses(res, next);
@@ -461,59 +452,81 @@ export const deleteCourse = catchAsyncErroMiddleWare(
   }
 );
 
+// export const generateVideoUrl = catchAsyncErroMiddleWare(
+//   async (req: Request, res: Response, next: NextFunction) => {
+//     try {
+//       const { videoID } = req.body;
+//       if (!videoID) return next(new ErrorHandler("Video ID is required", 400));
+
+      
+//       // Ensure API Secret exists 
+      
+//       const apiSecret = "yJ4t1FKEVaeFZR7kv45Q52Ci498YNetpTjDREGig4d4yvnOAUXZZYgiXCt5I4Bup";
+//       if (!apiSecret) {
+//         throw new Error(
+//           "VIDCIPHER_API_SECRET is not set in the environment variables"
+//         );
+//       }
+
+//       const response = await axios.post(
+//         `https://dev.vdocipher.com/api/videos/${videoID}/otp`,
+//         { ttl: 300 }, 
+//         {
+//           headers: {
+//             Accept: "application/json",
+//             "Content-Type": "application/json",
+//             Authorization: `Apisecret ${apiSecret}`,
+//           },
+//         }
+//       );
+
+//       if (response.status !== 200) {
+//         throw new Error(`Failed to generate OTP: ${response.statusText}`);
+//       }
+
+//       const { otp, playbackInfo } = response.data;
+
+//       if (!otp || !playbackInfo) {
+//         throw new Error(
+//           "OTP or Playback information is missing in the response"
+//         );
+//       }
+
+//       res.status(200).json({
+//         success: true,
+//         otp,
+//         playbackInfo,
+//       });
+//     } catch (error: any) {
+//       console.error(
+//         "Error generating VideoCipher OTP:",
+//         error.response?.data || error.message
+//       );
+//       return next(
+//         new ErrorHandler(error.response?.data?.message || error.message, 400)
+//       );
+//     }
+//   }
+// );
+
 export const generateVideoUrl = catchAsyncErroMiddleWare(
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const { videoID } = req.body;
       if (!videoID) return next(new ErrorHandler("Video ID is required", 400));
 
-      
-      // Ensure API Secret exists 
-      
-      const apiSecret = "yJ4t1FKEVaeFZR7kv45Q52Ci498YNetpTjDREGig4d4yvnOAUXZZYgiXCt5I4Bup";
-      if (!apiSecret) {
-        throw new Error(
-          "VIDCIPHER_API_SECRET is not set in the environment variables"
-        );
-      }
+      // Construct the embed URL
+      const embedUrl = `https://www.youtube.com/embed/${videoID}`;
 
-      const response = await axios.post(
-        `https://dev.vdocipher.com/api/videos/${videoID}/otp`,
-        { ttl: 300 }, 
-        {
-          headers: {
-            Accept: "application/json",
-            "Content-Type": "application/json",
-            Authorization: `Apisecret ${apiSecret}`,
-          },
-        }
-      );
-
-      if (response.status !== 200) {
-        throw new Error(`Failed to generate OTP: ${response.statusText}`);
-      }
-
-      const { otp, playbackInfo } = response.data;
-
-      if (!otp || !playbackInfo) {
-        throw new Error(
-          "OTP or Playback information is missing in the response"
-        );
-      }
+      console.log("videoUrl", embedUrl)
 
       res.status(200).json({
         success: true,
-        otp,
-        playbackInfo,
+        embedUrl,
       });
     } catch (error: any) {
-      console.error(
-        "Error generating VideoCipher OTP:",
-        error.response?.data || error.message
-      );
-      return next(
-        new ErrorHandler(error.response?.data?.message || error.message, 400)
-      );
+      console.error(error.message);
+      return next(new ErrorHandler(error.message, 500));
     }
   }
 );

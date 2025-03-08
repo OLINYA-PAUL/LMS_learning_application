@@ -6,8 +6,8 @@ import {
   addQuestions,
   addReview,
   deleteCourse,
+  getAllCoursesByUsers,
   getAllCourses,
-  getAllleCourse,
   getCourseByUser,
   getSingleCourse,
   updateCourse,
@@ -34,13 +34,34 @@ courseRoute.put(
   updateCourse
 );
 courseRoute.get("/getsingle-course/:id", getSingleCourse);
-courseRoute.get("/getall-course", getAllleCourse);
-courseRoute.get("/getcourse-content/:id", isAuthenticated, getCourseByUser);
-courseRoute.put("/addcourse-question", isAuthenticated, addQuestions);
-courseRoute.put("/addcourse-answer", isAuthenticated, addAnswer);
-courseRoute.put("/addcourse-review/:id", isAuthenticated, addReview);
+courseRoute.get("/getall-course", getAllCourses);
+courseRoute.get(
+  "/getcourse-content/:id",
+  updateAccessToken,
+  isAuthenticated,
+  getCourseByUser
+);
+courseRoute.put(
+  "/addcourse-question",
+  updateAccessToken,
+  isAuthenticated,
+  addQuestions
+);
+courseRoute.put(
+  "/addcourse-answer",
+  updateAccessToken,
+  isAuthenticated,
+  addAnswer
+);
+courseRoute.put(
+  "/addcourse-review/:id",
+  updateAccessToken,
+  isAuthenticated,
+  addReview
+);
 courseRoute.put(
   "/addreply-to-review",
+  updateAccessToken,
   isAuthenticated,
   authoriseUserRole("admin"),
   addCommenToReview
@@ -48,13 +69,15 @@ courseRoute.put(
 
 courseRoute.get(
   "/get-all-courses",
+  updateAccessToken,
   isAuthenticated,
   authoriseUserRole("admin"),
-  getAllCourses
+  getAllCoursesByUsers
 );
 
 courseRoute.delete(
   "/delete-course/:id",
+  updateAccessToken,
   isAuthenticated,
   authoriseUserRole("admin"),
   deleteCourse
@@ -62,11 +85,12 @@ courseRoute.delete(
 
 courseRoute.get(
   "/courses-analysis",
+  updateAccessToken,
   isAuthenticated,
   authoriseUserRole("admin"),
   getCoursesAnalysis
 );
 
-courseRoute.post("/getVideoCipherOtp-url", generateVideoUrl);
+courseRoute.post("/getVideo-url", generateVideoUrl);
 
 export default courseRoute;

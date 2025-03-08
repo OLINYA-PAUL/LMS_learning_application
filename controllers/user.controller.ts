@@ -143,10 +143,12 @@ export const activateUser = catchAsyncErroMiddleWare(
       });
 
       await user.save();
-      res.status(201).json({
-        sucess: true,
-        message: "Your account have been created successfully 💖",
-      });
+      // res.status(201).json({
+      //   sucess: true,
+      //   message: " account created ",
+      // });
+
+      sendToken(user, 200, res);
     } catch (error: any) {
       return next(new ErrorHandler(error.message, 500)); // Catch and forward email sending error
     }
@@ -203,73 +205,89 @@ export const logOutUser = catchAsyncErroMiddleWare(
 
 export const updateAccessToken = catchAsyncErroMiddleWare(
   async (req: Request, res: Response, next: NextFunction) => {
+    const refresh_token = req.cookies.refresh_token;
+
+    // Check if refresh token exists
+    if (!refresh_token) {
+      return next(new ErrorHandler("Refresh token not provided", 401));
+    }
+
+    // Verify refresh token
+    let decoded: JwtPayload;
     try {
-      const refresh_token = req.cookies.refresh_token;
-      console.log("refresh_token", { refresh_token });
+      decoded = jwt.verify(
+        refresh_token,
+        process.env.REFRESH_TOKEN as string
+      ) as JwtPayload;
+    } catch (error) {
+      return next(new ErrorHandler("Invalid or expired refresh token", 401));
+    }
 
-      if (!refresh_token) {
-        return next(new ErrorHandler("Refresh token not provided", 401));
+    if (!decoded.id) {
+      return next(new ErrorHandler("Invalid token format", 401));
+    }
+
+    // Get user session from Redis
+    let session = await redis.get(decoded.id);
+    let user;
+
+    // If no Redis session, try to get user from database
+    if (!session) {
+      const userFromDb = await UserModel.findById(decoded.id);
+
+      if (!userFromDb) {
+        return next(
+          new ErrorHandler("User not found, please login again", 401)
+        );
       }
 
-      let decoded: JwtPayload;
-      try {
-        decoded = jwt.verify(
-          refresh_token,
-          process.env.REFRESH_TOKEN as string
-        ) as JwtPayload;
-      } catch (error) {
-        return next(new ErrorHandler("Invalid or expired refresh token", 401));
-      }
+      // Create a new session for valid user found in database
+      user = userFromDb;
 
-      const session = await redis.get(decoded.id);
-      if (!session) {
-        const sessionDb = await UserModel.findById(decoded.id);
-
-        if (!sessionDb) {
-          return next(
-            new ErrorHandler("Please login to access this resource", 401)
-          );
-        }
-      }
-
-      let user;
+      // Store user in Redis for future requests
+      await redis.set(decoded.id, JSON.stringify(user), "EX", 604800); // 7 days
+    } else {
+      // Parse the session data
       try {
         user = JSON.parse(session);
       } catch (error) {
-        return next(new ErrorHandler("Invalid session data", 500));
+        return next(
+          new ErrorHandler("Invalid session data, please login again", 500)
+        );
       }
 
-      // Create new access token (expires in 5 minutes)
-      const accessToken = jwt.sign(
-        { id: user._id },
-        process.env.ACCESS_TOKEN as string,
-        { expiresIn: "5m" }
-      );
-
-      // Create new refresh token (expires in 3 days)
-      const refreshToken = jwt.sign(
-        { id: user._id },
-        process.env.REFRESH_TOKEN as string,
-        { expiresIn: "3d" }
-      );
-
-      req.user = user;
-
-      // Send the new access and refresh tokens in the cookies
-      res.cookie("access_token", accessToken, accessTokenOptions);
-      res.cookie("refresh_token", refreshToken, refreshTokenOptions);
-
-      // Update Redis session expiry to 7 days
-      await redis.set(user._id, JSON.stringify(user._id), "EX", 604800);
-
-      res.status(200).json({
-        success: true,
-        accessToken,
-      });
-      next();
-    } catch (error: any) {
-      return next(new ErrorHandler(error.message, 400));
+      // Validate parsed user data
+      if (!user || !user._id) {
+        return next(
+          new ErrorHandler("Corrupted session data, please login again", 500)
+        );
+      }
     }
+
+    // Generate new tokens
+    const accessToken = jwt.sign(
+      { id: user._id },
+      process.env.ACCESS_TOKEN as string,
+      { expiresIn: "1h" }
+    );
+
+    const refreshToken = jwt.sign(
+      { id: user._id },
+      process.env.REFRESH_TOKEN as string,
+      { expiresIn: "3d" }
+    );
+
+    // Attach user to request
+    req.user = user;
+
+    // Set cookies with new tokens
+    res.cookie("access_token", accessToken, accessTokenOptions);
+    res.cookie("refresh_token", refreshToken, refreshTokenOptions);
+
+    // Update Redis session (use user._id consistently)
+    await redis.set(user._id, JSON.stringify(user), "EX", 604800); // 7 days
+
+    next();
   }
 );
 
