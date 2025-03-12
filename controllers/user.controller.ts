@@ -143,12 +143,12 @@ export const activateUser = catchAsyncErroMiddleWare(
       });
 
       await user.save();
-      // res.status(201).json({
-      //   sucess: true,
-      //   message: " account created ",
-      // });
+      res.status(201).json({
+        sucess: true,
+        message: " account created ",
+      });
 
-      sendToken(user, 200, res);
+      // sendToken(user, 200, res);
     } catch (error: any) {
       return next(new ErrorHandler(error.message, 500)); // Catch and forward email sending error
     }
@@ -287,6 +287,13 @@ export const updateAccessToken = catchAsyncErroMiddleWare(
     // Update Redis session (use user._id consistently)
     await redis.set(user._id, JSON.stringify(user), "EX", 604800); // 7 days
 
+    if (req.path === "/refresh-token") {
+      return res.json({
+        message: "Access token refreshed successfully",
+        accessToken,
+      });
+    }
+
     next();
   }
 );
@@ -336,7 +343,7 @@ export const socialAuth = catchAsyncErroMiddleWare(
           authType: "social",
         });
         sendToken(newUser, 200, res);
-        newUser.save();
+        // newUser.save();
       } else {
         sendToken(user, 200, res);
       }
@@ -359,14 +366,6 @@ export const updateUserInfo = catchAsyncErroMiddleWare(
       const userId = req.user?._id;
 
       const user = await UserModel.findById(userId);
-      // if (user && email) {
-      //   const isEmailExsit = await UserModel.findOne({ email });
-      //   if (isEmailExsit) {
-      //     return next(new ErrorHandler("Email is already exsit", 400));
-      //   }
-
-      //   user.email = email;
-      // }
 
       if (name && user) {
         user.name = name;
@@ -439,58 +438,46 @@ export const updateUserAvatar = catchAsyncErroMiddleWare(
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const { avatar } = req.body as IupdateUserAvatar;
-      if (!avatar) {
-        return next(new ErrorHandler("image is required", 400));
-      }
+      if (!avatar) return next(new ErrorHandler("Image is required", 400));
 
       const userId = req.user?._id;
-
       const user = await UserModel.findById(userId);
       if (!user) return next(new ErrorHandler("No user found", 400));
 
-      if (avatar && user) {
-        // first delete user avatar
-
-        if (user?.avatar.public_Id) {
-          await cloudinary.v2.uploader.destroy(user.avatar.public_Id, {
-            invalidate: false,
-          });
-
-          // uploaded the user latest avatar
-
-          const myCloud = await cloudinary.v2.uploader.upload(avatar, {
-            folder: "avater",
-            width: 150,
-            image_metadata: true,
-          });
-
-          user.avatar = {
-            public_Id: myCloud.public_id,
-            url: myCloud.secure_url,
-          };
-        } else {
-          const myCloud = await cloudinary.v2.uploader.upload(avatar, {
-            folder: "avater",
-            width: 150,
-            image_metadata: true,
-          });
-
-          user.avatar = {
-            public_Id: myCloud.public_id,
-            url: myCloud.secure_url,
-          };
-        }
+      let myCloud;
+      if (user?.avatar?.public_Id) {
+        // Delete old avatar
+        await cloudinary.v2.uploader.destroy(user.avatar.public_Id, {
+          invalidate: true, // Ensures the old image is fully removed
+        });
       }
 
-      await user?.save();
-      await redis.set(userId, JSON.stringify(user) as string);
+      // Upload new avatar
+      myCloud = await cloudinary.v2.uploader.upload(avatar, {
+        folder: "avatar",
+        width: 150,
+        image_metadata: true,
+      });
+
+      user.avatar = {
+        public_Id: myCloud.public_id,
+        url: myCloud.secure_url,
+      };
+
+      user.markModified("avatar"); // Ensure Mongoose detects the change
+      await user.save();
+
+      // Refresh Redis Cache (Optional)
+      await redis.del(userId); // Delete old cache
+      await redis.set(userId, JSON.stringify(user)); // Store updated user
 
       res.status(200).json({
         success: true,
-        message: "Profile image uploaded successfully",
+        message: "Profile image updated successfully",
         user,
       });
     } catch (error: any) {
+      console.error("Avatar Update Error:", error.message);
       return next(new ErrorHandler(error.message, 400));
     }
   }

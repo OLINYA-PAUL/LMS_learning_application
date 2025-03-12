@@ -4,7 +4,7 @@ import { catchAsyncErroMiddleWare } from "../middleware/catchAsyncErrors";
 import { Request, Response, NextFunction } from "express";
 import cloudinary from "cloudinary";
 import ErrorHandler from "../utils/errorHandler";
-import { createCourse, getAllUsersCourses } from "../services/course.service";
+import { createCourse, getAllAdminCourses } from "../services/course.service";
 import { CourseModel } from "../models/course.model";
 import mongoose from "mongoose";
 import path from "path";
@@ -126,20 +126,18 @@ export const getSingleCourse = catchAsyncErroMiddleWare(
 export const getAllCourses = catchAsyncErroMiddleWare(
   async (req: Request, res: Response, next: NextFunction) => {
     try {
-
-        const courses = await CourseModel.find({}).select(
-          "-courseData.description -courseData.videoUrl -courseData.link -courseData.suggestions -courseData.questions"
-        );
-        if (!courses) {
-          return next(new ErrorHandler("No course to show", 400));
-        }
-
-        res.status(200).json({
-          success: true,
-          courses,
-        });
+      const courses = await CourseModel.find({}).select(
+        "-courseData.description -courseData.videoUrl -courseData.link -courseData.suggestions -courseData.questions"
+      );
+      if (!courses) {
+        return next(new ErrorHandler("No course to show", 400));
       }
-    catch (error: any) {
+
+      res.status(200).json({
+        success: true,
+        courses,
+      });
+    } catch (error: any) {
       return next(new ErrorHandler(error.message, 400));
     }
   }
@@ -157,11 +155,11 @@ export const getCourseByUser = catchAsyncErroMiddleWare(
         return course._id?.toString() === courseId.toString();
       });
 
-      // if (!findUserCourse) {
-      //   return next(
-      //     new ErrorHandler("You are not authorized to view this content", 400)
-      //   );
-      // }
+      if (!findUserCourse) {
+        return next(
+          new ErrorHandler("You are not authorized to view this content", 400)
+        );
+      }
 
       const courseContent = await CourseModel.findById(courseId);
       if (!courseContent) {
@@ -417,10 +415,10 @@ export const addCommenToReview = catchAsyncErroMiddleWare(
   }
 );
 
-export const getAllCoursesByUsers = catchAsyncErroMiddleWare(
+export const getAdminAllCourse = catchAsyncErroMiddleWare(
   async (req: Request, res: Response, next: NextFunction) => {
     try {
-      await getAllUsersCourses(res, next);
+      await getAllAdminCourses(res, next);
     } catch (error: any) {
       return next(new ErrorHandler(error.message, 400));
     }
@@ -458,9 +456,8 @@ export const deleteCourse = catchAsyncErroMiddleWare(
 //       const { videoID } = req.body;
 //       if (!videoID) return next(new ErrorHandler("Video ID is required", 400));
 
-      
-//       // Ensure API Secret exists 
-      
+//       // Ensure API Secret exists
+
 //       const apiSecret = "yJ4t1FKEVaeFZR7kv45Q52Ci498YNetpTjDREGig4d4yvnOAUXZZYgiXCt5I4Bup";
 //       if (!apiSecret) {
 //         throw new Error(
@@ -470,7 +467,7 @@ export const deleteCourse = catchAsyncErroMiddleWare(
 
 //       const response = await axios.post(
 //         `https://dev.vdocipher.com/api/videos/${videoID}/otp`,
-//         { ttl: 300 }, 
+//         { ttl: 300 },
 //         {
 //           headers: {
 //             Accept: "application/json",
@@ -518,7 +515,7 @@ export const generateVideoUrl = catchAsyncErroMiddleWare(
       // Construct the embed URL
       const embedUrl = `https://www.youtube.com/embed/${videoID}`;
 
-      console.log("videoUrl", embedUrl)
+      console.log("videoUrl", embedUrl);
 
       res.status(200).json({
         success: true,

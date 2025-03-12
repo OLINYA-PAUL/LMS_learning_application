@@ -6,7 +6,7 @@ import {
   addQuestions,
   addReview,
   deleteCourse,
-  getAllCoursesByUsers,
+  getAdminAllCourse,
   getAllCourses,
   getCourseByUser,
   getSingleCourse,
@@ -68,11 +68,11 @@ courseRoute.put(
 );
 
 courseRoute.get(
-  "/get-all-courses",
+  "/get-admin-all-courses",
   updateAccessToken,
   isAuthenticated,
   authoriseUserRole("admin"),
-  getAllCoursesByUsers
+  getAdminAllCourse
 );
 
 courseRoute.delete(

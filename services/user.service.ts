@@ -67,6 +67,10 @@ export const updateUsersRollesService = async (
       { new: true, runValidators: true } // Return the updated document and run validators
     );
 
+    // if (id !== user?._id) {
+    //   return next(new errorHandler("No user with  that id", 404));
+    // }
+
     if (!user) {
       return next(new errorHandler("No user found with this ID", 404));
     }
