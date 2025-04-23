@@ -16,13 +16,16 @@ layoutRoute.post(
   authoriseUserRole("admin"),
   createLayout
 );
-layoutRoute.post(
+layoutRoute.put(
   "/update-layout",
   updateAccessToken,
   isAuthenticated,
   authoriseUserRole("admin"),
   editLayout
 );
-layoutRoute.get("/get-layout", getLayoutByType);
+layoutRoute.get(
+  "/get-layout/:type",
+  getLayoutByType
+);
 
 export default layoutRoute;

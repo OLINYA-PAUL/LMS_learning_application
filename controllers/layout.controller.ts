@@ -108,30 +108,75 @@ export const editLayout = catchAsyncErroMiddleWare(
       }
 
       // Handle 'banner' type
+      // if (type === "Banner") {
+      //   const { image, title, subTitle } = req.body;
+
+      //   const bannerData = await LayoutModel.findOne({ type: "Banner" });
+
+      //   if (bannerData)
+      //     await cloudinary.v2.uploader.destroy(
+      //       bannerData.banner.image.public_id,
+      //       {
+      //         resource_type: "image",
+      //       }
+      //     );
+
+      //   const myCloud = await cloudinary.v2.uploader.upload(image, {
+      //     folder: "layout",
+      //   });
+
+      //   const banner = {
+      //     image: {
+      //       public_id: myCloud.public_id,
+      //       url: myCloud.secure_url,
+      //     },
+      //     title,
+      //     subTitle,
+      //   };
+
+      //   await LayoutModel.findByIdAndUpdate(bannerData?._id, { banner });
+      // }
+
       if (type === "Banner") {
         const { image, title, subTitle } = req.body;
 
-        const bannerData: any = await LayoutModel.findOne({ type: "Banner" });
+        let bannerData = await LayoutModel.findOne({ type: "Banner" });
 
-        if (bannerData)
-          await cloudinary.v2.uploader.destroy(bannerData.image.public_Id, {
-            resource_type: "image",
+        if (bannerData?.banner?.image?.public_id) {
+          await cloudinary.v2.uploader.destroy(
+            bannerData.banner.image.public_id,
+            {
+              resource_type: "image",
+            }
+          );
+        }
+
+        let uploadedImage = null;
+        if (!image.startsWith("https")) {
+          uploadedImage = await cloudinary.v2.uploader.upload(image, {
+            folder: "layout",
           });
-
-        const myCloud = await cloudinary.v2.uploader.upload(image, {
-          folder: "layout",
-        });
+        }
 
         const banner = {
           image: {
-            public_id: myCloud.public_id,
-            url: myCloud.secure_url,
+            public_id: uploadedImage
+              ? uploadedImage.public_id
+              : bannerData?.banner.image?.public_id,
+            url: uploadedImage
+              ? uploadedImage.secure_url
+              : bannerData?.banner.image?.url,
           },
           title,
           subTitle,
         };
 
-        await LayoutModel.findByIdAndUpdate(bannerData._id, { banner });
+        if (bannerData) {
+          await LayoutModel.findByIdAndUpdate(bannerData._id, { banner });
+        } else {
+          bannerData = new LayoutModel({ type: "Banner", banner });
+          await bannerData.save();
+        }
       }
 
       // Handle 'FAQ' type
@@ -139,6 +184,8 @@ export const editLayout = catchAsyncErroMiddleWare(
         const { faq } = req.body;
 
         const faqId = await LayoutModel.findOne({ type: "FAQ" });
+
+        console.log("FAQ DATA", faqId);
 
         const faqItems = faq.map((item: any) => ({
           question: item.question,
@@ -153,19 +200,31 @@ export const editLayout = catchAsyncErroMiddleWare(
 
       // Handle 'categories' type
       if (type === "Categories") {
-        const { categories } = req.body;
-        const categoryId = await LayoutModel.findOne({ type: "Categories" });
+        let { categories } = req.body;
+        console.log(categories, "categories");
+
+        if (!Array.isArray(categories)) {
+          return next(new ErrorHandler("Categories must be an array", 400));
+        }
+
+        let categoryId = await LayoutModel.findOne({ type: "Categories" });
 
         const categoriesItems = categories.map((item: any) => ({
           title: item.title,
         }));
 
         await LayoutModel.findByIdAndUpdate(categoryId?._id, {
-          $set: {
+          type: "Categories",
+          categories: categoriesItems,
+        });
+
+        if (!categoryId) {
+          categoryId = new LayoutModel({
             type: "Categories",
             categories: categoriesItems,
-          },
-        });
+          });
+          await categoryId.save();
+        }
       }
 
       res.status(200).json({
@@ -183,10 +242,13 @@ export const editLayout = catchAsyncErroMiddleWare(
 export const getLayoutByType = catchAsyncErroMiddleWare(
   async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const type = req.body?.type as string;
-      const layout: any = await LayoutModel.find({ type });
+      const type = req.params.type.trim(); // Ensure there are no spaces
 
-      if (layout) return next(new ErrorHandler("cannot find this layout", 404));
+      const layout = await LayoutModel.findOne({ type });
+
+      if (!layout) {
+        return next(new ErrorHandler("Cannot find this layout", 404));
+      }
 
       res.status(200).json({
         success: true,

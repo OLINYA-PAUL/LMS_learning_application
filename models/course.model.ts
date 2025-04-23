@@ -40,10 +40,12 @@ interface ICourseData extends Document {
 interface ICourse extends Document {
   name: string;
   description: string;
-  price: Number;
-  estimatedPrice: Number;
+  title: String;
+  categories: string;
+  price: number;
+  estimatedPrice: number;
   thumbnails: string;
-  tag: string;
+  tags: string;
   level: string;
   demoUrl: string;
   benefits: { title: string }[];
@@ -54,29 +56,36 @@ interface ICourse extends Document {
   purchased?: number;
 }
 
-const revieweSchema = new Schema<IReview>({
-  user: Object,
-  ratings: {
-    type: Number,
-    default: 0,
+const revieweSchema = new Schema<IReview>(
+  {
+    user: Object,
+    ratings: {
+      type: Number,
+      default: 0,
+    },
+    comment: String,
+    commentReplies: [Object],
   },
-  comment: String,
-  commentReplies: [Object],
-});
+  { timestamps: true }
+);
 
 const likSchema = new Schema<ILinks>({
   title: String,
   url: String,
 });
 
-const commentSchema = new Schema<IComment>({
-  user: Object,
-  question: String,
-  questionReplies: [Object],
-});
+const commentSchema = new Schema<IComment>(
+  {
+    user: Object,
+    question: String,
+    questionReplies: [Object],
+  },
+  { timestamps: true }
+);
 
 const courseDataSchema = new Schema<ICourseData>({
   description: String,
+  title: String,
   videoUrl: String,
   videoLength: String,
   videoSection: String,
@@ -96,6 +105,12 @@ const courseSchema = new Schema<ICourse>(
       type: String,
       required: true,
     },
+    title: {
+      type: String,
+    },
+    categories: {
+      type: String,
+    },
     price: {
       type: Number,
       required: true,
@@ -112,7 +127,7 @@ const courseSchema = new Schema<ICourse>(
         type: String,
       },
     },
-    tag: {
+    tags: {
       type: String,
       require: true,
     },

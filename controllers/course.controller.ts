@@ -151,6 +151,8 @@ export const getCourseByUser = catchAsyncErroMiddleWare(
       const getUserCourse = req.user?.courses!;
       const courseId = req.params.id;
 
+      console.log("getUserCourse", getUserCourse, "userID", courseId);
+
       const findUserCourse = getUserCourse?.find((course) => {
         return course._id?.toString() === courseId.toString();
       });
@@ -323,13 +325,13 @@ export const addReview = catchAsyncErroMiddleWare(
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const userCourseList = req.user?.courses;
-      const courseId = req.params.id;
+      const courseId = req?.params.id;
 
       userCourseList?.find((Id: any) => {
-        Id?._Id.toString() === courseId.toString();
+        Id?._id.toString() === courseId.toString();
       });
 
-      const course = await CourseModel.findById(courseId!);
+      const course = await CourseModel.findById(courseId);
 
       if (!course) return next(new ErrorHandler("Failed to get course", 400));
 

@@ -5,6 +5,8 @@ import {
   createOrder,
   deleteOrders,
   getAllOrders,
+  newPayment,
+  stripePublishableKey,
 } from "../controllers/order.controller";
 import { updateAccessToken } from "../controllers/user.controller";
 import { getOrdersAnalysis } from "../controllers/analysis.controller";
@@ -35,6 +37,19 @@ orderRoute.get(
   isAuthenticated,
   authoriseUserRole("admin"),
   getOrdersAnalysis
+);
+
+orderRoute.get(
+  "/get-newpayment/stripePublishableKey",
+  updateAccessToken,
+  // isAuthenticated,
+  stripePublishableKey
+);
+orderRoute.post(
+  "/post-newpayment",
+  updateAccessToken,
+  isAuthenticated,
+  newPayment
 );
 
 export default orderRoute;
