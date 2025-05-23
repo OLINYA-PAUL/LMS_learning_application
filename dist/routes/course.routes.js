@@ -1,0 +1,26 @@
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+const express_1 = __importDefault(require("express"));
+const auth_1 = require("../middleware/auth");
+const course_controller_1 = require("../controllers/course.controller");
+const analysis_controller_1 = require("../controllers/analysis.controller");
+const user_controller_1 = require("../controllers/user.controller");
+const courseRoute = express_1.default.Router();
+courseRoute.post("/create-course", user_controller_1.updateAccessToken, auth_1.isAuthenticated, (0, auth_1.authoriseUserRole)("admin"), course_controller_1.uploadCourse);
+courseRoute.put("/update-course/:id", user_controller_1.updateAccessToken, auth_1.isAuthenticated, (0, auth_1.authoriseUserRole)("admin"), course_controller_1.updateCourse);
+courseRoute.get("/getsingle-course/:id", course_controller_1.getSingleCourse);
+courseRoute.get("/getall-course", course_controller_1.getAllCourses);
+courseRoute.get("/getcourse-content/:id", user_controller_1.updateAccessToken, auth_1.isAuthenticated, course_controller_1.getCourseByUser);
+courseRoute.put("/addcourse-question", user_controller_1.updateAccessToken, auth_1.isAuthenticated, course_controller_1.addQuestions);
+courseRoute.put("/addcourse-answer", user_controller_1.updateAccessToken, auth_1.isAuthenticated, course_controller_1.addAnswer);
+courseRoute.put("/addcourse-review/:id", user_controller_1.updateAccessToken, auth_1.isAuthenticated, course_controller_1.addReview);
+courseRoute.put("/addreply-to-review", user_controller_1.updateAccessToken, auth_1.isAuthenticated, (0, auth_1.authoriseUserRole)("admin"), course_controller_1.addCommenToReview);
+courseRoute.get("/get-admin-all-courses", user_controller_1.updateAccessToken, auth_1.isAuthenticated, (0, auth_1.authoriseUserRole)("admin"), course_controller_1.getAdminAllCourse);
+courseRoute.delete("/delete-course/:id", user_controller_1.updateAccessToken, auth_1.isAuthenticated, (0, auth_1.authoriseUserRole)("admin"), course_controller_1.deleteCourse);
+courseRoute.get("/courses-analysis", user_controller_1.updateAccessToken, auth_1.isAuthenticated, (0, auth_1.authoriseUserRole)("admin"), analysis_controller_1.getCoursesAnalysis);
+courseRoute.delete("/delete-review/:id", user_controller_1.updateAccessToken, auth_1.isAuthenticated, (0, auth_1.authoriseUserRole)("admin"), course_controller_1.deleteUserReview);
+courseRoute.post("/getVideo-url", course_controller_1.generateVideoUrl);
+exports.default = courseRoute;

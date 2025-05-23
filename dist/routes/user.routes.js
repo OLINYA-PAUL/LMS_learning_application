@@ -1,0 +1,25 @@
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+const express_1 = __importDefault(require("express"));
+const user_controller_1 = require("../controllers/user.controller");
+const auth_1 = require("../middleware/auth");
+const analysis_controller_1 = require("../controllers/analysis.controller");
+const userRoute = express_1.default.Router();
+userRoute.post("/registration", user_controller_1.registerationUser);
+userRoute.post("/activate-user", user_controller_1.activateUser);
+userRoute.post("/login-user", user_controller_1.loginUser);
+userRoute.post("/social-auth", user_controller_1.socialAuth, user_controller_1.updateAccessToken);
+userRoute.get("/logout-user", auth_1.isAuthenticated, user_controller_1.logOutUser);
+userRoute.get("/refresh-token", auth_1.isAuthenticated, user_controller_1.updateAccessToken);
+userRoute.get("/me", user_controller_1.updateAccessToken, auth_1.isAuthenticated, user_controller_1.getUserInfo);
+userRoute.put("/updateuser-info", user_controller_1.updateAccessToken, auth_1.isAuthenticated, user_controller_1.updateUserInfo);
+userRoute.put("/updateuser-password", user_controller_1.updateAccessToken, auth_1.isAuthenticated, user_controller_1.updateUserPassword);
+userRoute.put("/updateuser-avatar", user_controller_1.updateAccessToken, auth_1.isAuthenticated, user_controller_1.updateUserAvatar);
+userRoute.get("/get-all-users", user_controller_1.updateAccessToken, auth_1.isAuthenticated, (0, auth_1.authoriseUserRole)("admin"), user_controller_1.getAllUsers);
+userRoute.put("/update-users-roles", user_controller_1.updateAccessToken, auth_1.isAuthenticated, (0, auth_1.authoriseUserRole)("admin"), user_controller_1.updateUsersRolles);
+userRoute.delete("/delete-users/:id", user_controller_1.updateAccessToken, auth_1.isAuthenticated, (0, auth_1.authoriseUserRole)("admin"), user_controller_1.deleteUsers);
+userRoute.get("/users-analysis", user_controller_1.updateAccessToken, auth_1.isAuthenticated, (0, auth_1.authoriseUserRole)("admin"), analysis_controller_1.getUsersAnalysis);
+exports.default = userRoute;

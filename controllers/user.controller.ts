@@ -20,7 +20,6 @@ import {
   getUserByID,
   updateUsersRollesService,
 } from "../services/user.service";
-import axios from "axios";
 const createRedisClient = require("../utils/redis");
 
 interface IregisterUser {

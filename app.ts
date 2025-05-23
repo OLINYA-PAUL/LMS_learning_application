@@ -21,7 +21,7 @@ app.use(cookieParser());
 app.use(express.json({ limit: "50mb" }));
 app.use(express.urlencoded({ extended: true }));
 
-let allowedOrigins = ["http://localhost:3000", "http://localhost:3001"];
+let allowedOrigins = ["https://elearningapp-weld.vercel.app", "https://elearningapp-weld.vercel.app"];
 
 // if (process.env.ALLOWED_CORS_ORIGINS) {
 //   allowedOrigins = process.env.ALLOWED_CORS_ORIGINS;

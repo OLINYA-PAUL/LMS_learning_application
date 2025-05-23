@@ -12,7 +12,6 @@ import ejs from "ejs";
 import { sendEmail } from "../utils/sendMail";
 import { notificationModel } from "../models/notification.model";
 const createRedisClient = require("../utils/redis");
-import axios from "axios";
 
 const redis = createRedisClient();
 
