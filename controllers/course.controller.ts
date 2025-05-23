@@ -129,6 +129,7 @@ export const getAllCourses = catchAsyncErroMiddleWare(
       const courses = await CourseModel.find({}).select(
         "-courseData.description -courseData.videoUrl -courseData.link -courseData.suggestions -courseData.questions"
       );
+
       if (!courses) {
         return next(new ErrorHandler("No course to show", 400));
       }
@@ -148,10 +149,8 @@ export const getAllCourses = catchAsyncErroMiddleWare(
 export const getCourseByUser = catchAsyncErroMiddleWare(
   async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const getUserCourse = req.user?.courses!;
+      const getUserCourse = req.user?.courses;
       const courseId = req.params.id;
-
-      console.log("getUserCourse", getUserCourse, "userID", courseId);
 
       const findUserCourse = getUserCourse?.find((course) => {
         return course._id?.toString() === courseId.toString();
@@ -268,6 +267,8 @@ export const addAnswer = catchAsyncErroMiddleWare(
       const addnewAnswer = {
         user: req.user,
         answer,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
       } as any;
 
       question.questionReplies?.push(addnewAnswer) ?? [];
@@ -359,10 +360,13 @@ export const addReview = catchAsyncErroMiddleWare(
 
       await course.save();
 
-      const notification = {
+      const courseRate = course?.ratings! > 1 ? "scores" : "score";
+
+      await notificationModel.create({
+        userId: req.user?._id,
         title: "New reviews received",
-        message: `${req.user?.name} has giving a review in ${course.name} with ${course.ratings} rating score `,
-      };
+        message: `${req.user?.name} has giving a review in ${course.name} with ${course.ratings} rating ${courseRate}`,
+      });
 
       res.status(200).json({
         success: true,
@@ -401,6 +405,8 @@ export const addCommenToReview = catchAsyncErroMiddleWare(
       const addCommentToReviews = {
         user: req.user,
         comment,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
       };
 
       if (!reviews.commentReplies) {
@@ -448,6 +454,59 @@ export const deleteCourse = catchAsyncErroMiddleWare(
     res.status(200).json({
       success: true,
       message: "Course deleted successfully",
+    });
+  }
+);
+
+export const deleteUserReview = catchAsyncErroMiddleWare(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const userId = req.params.id as string;
+    const courseId = req.user?.courses;
+
+    // Find the user's course
+
+    //@ts-ignore
+
+    const userCourse = courseId?.find(
+      (course: any) => course?._id.toString() === userId
+    );
+
+    if (!userCourse) {
+      return next(new ErrorHandler("Can't find course ID", 404));
+    }
+
+    const { reviewId } = req.body;
+
+    if (!reviewId) {
+      return next(new ErrorHandler("Review ID is required", 400));
+    }
+
+    // Find the course with the specific review
+    const course = await CourseModel.findOne({ "reviews._id": reviewId });
+
+    if (!course) {
+      return next(new ErrorHandler("Course not found", 404));
+    }
+
+    // Check if the review exists within the course
+    const reviewExists = course.reviews.find((review: any) => {
+      //@ts-ignore
+      return review?._id.toString() === reviewId;
+    });
+
+    if (!reviewExists) {
+      return next(new ErrorHandler("Review not found", 404));
+    }
+
+    // Remove the review from the course
+    await CourseModel.updateOne(
+      { _id: course._id },
+      { $pull: { reviews: { _id: reviewId } } }
+    );
+
+    res.status(200).json({
+      success: true,
+      message: "Review deleted successfully",
     });
   }
 );

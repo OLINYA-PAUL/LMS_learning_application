@@ -13,6 +13,7 @@ import {
   updateCourse,
   uploadCourse,
   generateVideoUrl,
+  deleteUserReview
 } from "../controllers/course.controller";
 import { getCoursesAnalysis } from "../controllers/analysis.controller";
 import { updateAccessToken } from "../controllers/user.controller";
@@ -82,7 +83,6 @@ courseRoute.delete(
   authoriseUserRole("admin"),
   deleteCourse
 );
-
 courseRoute.get(
   "/courses-analysis",
   updateAccessToken,
@@ -90,6 +90,17 @@ courseRoute.get(
   authoriseUserRole("admin"),
   getCoursesAnalysis
 );
+
+
+courseRoute.delete(
+  "/delete-review/:id",
+  updateAccessToken,
+  isAuthenticated,
+    authoriseUserRole("admin"),
+
+  deleteUserReview
+);
+
 
 courseRoute.post("/getVideo-url", generateVideoUrl);
 

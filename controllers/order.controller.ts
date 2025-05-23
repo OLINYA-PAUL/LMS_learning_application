@@ -14,6 +14,7 @@ import { createNewOrder, getAllUsersOrders } from "../services/order.service";
 import { notificationModel } from "../models/notification.model";
 import mongoose from "mongoose";
 const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
+import { ICourse } from "../models/course.model";
 
 const redis = createRedisClient();
 
@@ -105,7 +106,7 @@ export const createOrder = catchAsyncErroMiddleWare(
     }
 
     // Validate course
-    const course = await CourseModel.findById(courseId);
+    const course: ICourse | null = await CourseModel.findById(courseId);
     if (!course)
       return next(new ErrorHandler("No course with this ID found", 400));
 
@@ -129,9 +130,7 @@ export const createOrder = catchAsyncErroMiddleWare(
     await redis.set(req.user?._id, JSON.stringify(user));
     await user.save();
 
-    course.purchased = course.purchased
-      ? Number((course.purchased += 1))
-      : Number(course.purchased);
+    course.purchased = course.purchased += 1;
 
     await course.save();
 
