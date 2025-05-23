@@ -13,11 +13,11 @@ const initialiseSocketIO = (server: http.Server) => {
   const io = new socketIOServer(server);
 
   // Listen for new client connections
-  io.on("connection", (socket) => {
+  io.on("connection", (socket: any) => {
     console.log("A user connected");
 
     // Listen for "notification" events from the connected client
-    socket.on("notification", (data) => {
+    socket.on("notification", (data: any) => {
       // Immediately emit the received data back to the same client
       socket.emit("notification", data);
     });
