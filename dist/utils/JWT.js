@@ -4,7 +4,7 @@
 // const createRedisClient = require("./redis");
 // import { Response } from "express";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.sendToken = void 0;
+exports.sendToken = exports.refreshTokenOptions = exports.accessTokenOptions = void 0;
 // interface ItokenCookieOptions {
 //   expires: Date;
 //   httpOnly: boolean;
@@ -76,18 +76,20 @@ const createRedisClient = require("./redis");
 // Expiration times (in hours or days)
 const accessTokenExpire = parseInt(process.env.ACCESS_TOKEN_EXPIRE || "1", 10); // hours
 const refreshTokenExpire = parseInt(process.env.REFRESH_TOKEN_EXPIRE || "3", 10); // days
-// Base cookie options (without secure)
-const baseAccessTokenOptions = {
+// Export cookie options so other files can import these
+exports.accessTokenOptions = {
     expires: new Date(Date.now() + accessTokenExpire * 60 * 60 * 1000), // 1 hour
     httpOnly: true,
     sameSite: process.env.NODE_ENV === "production" ? "lax" : "strict",
     maxAge: accessTokenExpire * 60 * 60 * 1000,
+    secure: process.env.NODE_ENV === "production" ? true : false,
 };
-const baseRefreshTokenOptions = {
+exports.refreshTokenOptions = {
     expires: new Date(Date.now() + refreshTokenExpire * 24 * 60 * 60 * 1000), // 3 days
     httpOnly: true,
     sameSite: process.env.NODE_ENV === "production" ? "lax" : "strict",
     maxAge: refreshTokenExpire * 24 * 60 * 60 * 1000,
+    secure: process.env.NODE_ENV === "production" ? true : false,
 };
 const sendToken = async (user, statusCode, res) => {
     const redis = createRedisClient();
@@ -100,18 +102,9 @@ const sendToken = async (user, statusCode, res) => {
                 console.error("Error setting Redis data:", err);
             }
         });
-        // Add secure flag only in production
-        const accessTokenOptions = {
-            ...baseAccessTokenOptions,
-            secure: process.env.NODE_ENV === "production",
-        };
-        const refreshTokenOptions = {
-            ...baseRefreshTokenOptions,
-            secure: process.env.NODE_ENV === "production",
-        };
-        // Set cookies in response
-        res.cookie("access_token", access_token, accessTokenOptions);
-        res.cookie("refresh_token", refresh_token, refreshTokenOptions);
+        // Set cookies in response using exported options
+        res.cookie("access_token", access_token, exports.accessTokenOptions);
+        res.cookie("refresh_token", refresh_token, exports.refreshTokenOptions);
         res.status(statusCode).json({
             success: true,
             message: "account successful",

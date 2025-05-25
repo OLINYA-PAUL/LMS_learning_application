@@ -84,7 +84,7 @@ import { Iuser } from "../models/user.models";
 const createRedisClient = require("./redis");
 import { Response } from "express";
 
-interface ItokenCookieOptions {
+export interface ItokenCookieOptions {
   expires: Date;
   httpOnly: boolean;
   maxAge: number;
@@ -99,19 +99,21 @@ const refreshTokenExpire = parseInt(
   10
 ); // days
 
-// Base cookie options (without secure)
-const baseAccessTokenOptions: Omit<ItokenCookieOptions, "secure"> = {
+// Export cookie options so other files can import these
+export const accessTokenOptions: ItokenCookieOptions = {
   expires: new Date(Date.now() + accessTokenExpire * 60 * 60 * 1000), // 1 hour
   httpOnly: true,
   sameSite: process.env.NODE_ENV === "production" ? "lax" : "strict",
   maxAge: accessTokenExpire * 60 * 60 * 1000,
+  secure: process.env.NODE_ENV === "production" ? true : false,
 };
 
-const baseRefreshTokenOptions: Omit<ItokenCookieOptions, "secure"> = {
+export const refreshTokenOptions: ItokenCookieOptions = {
   expires: new Date(Date.now() + refreshTokenExpire * 24 * 60 * 60 * 1000), // 3 days
   httpOnly: true,
   sameSite: process.env.NODE_ENV === "production" ? "lax" : "strict",
   maxAge: refreshTokenExpire * 24 * 60 * 60 * 1000,
+  secure: process.env.NODE_ENV === "production" ? true : false,
 };
 
 export const sendToken = async (
@@ -131,18 +133,7 @@ export const sendToken = async (
       }
     });
 
-    // Add secure flag only in production
-    const accessTokenOptions: ItokenCookieOptions = {
-      ...baseAccessTokenOptions,
-      secure: process.env.NODE_ENV === "production",
-    };
-
-    const refreshTokenOptions: ItokenCookieOptions = {
-      ...baseRefreshTokenOptions,
-      secure: process.env.NODE_ENV === "production",
-    };
-
-    // Set cookies in response
+    // Set cookies in response using exported options
     res.cookie("access_token", access_token, accessTokenOptions);
     res.cookie("refresh_token", refresh_token, refreshTokenOptions);
 
