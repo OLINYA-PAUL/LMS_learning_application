@@ -138,6 +138,7 @@ export const sendToken = async (
     });
 
     // Set cookies in response using exported options
+    // Set cookies in response using exported options
     res.cookie("access_token", access_token, accessTokenOptions);
     res.cookie("refresh_token", refresh_token, refreshTokenOptions);
 
