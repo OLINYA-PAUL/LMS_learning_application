@@ -103,18 +103,22 @@ const refreshTokenExpire = parseInt(
 export const accessTokenOptions: ItokenCookieOptions = {
   expires: new Date(Date.now() + accessTokenExpire * 60 * 60 * 1000), // 1 hour
   httpOnly: true,
-  sameSite: process.env.NODE_ENV === "production" ? "lax" : "strict",
+  sameSite: "none",
   maxAge: accessTokenExpire * 60 * 60 * 1000,
-  secure: process.env.NODE_ENV === "production" ? true : false,
+  secure: true,
 };
+// sameSite: process.env.NODE_ENV === "production" ? "lax" : "strict",
+// secure: process.env.NODE_ENV === "production" ? true : false,
 
 export const refreshTokenOptions: ItokenCookieOptions = {
   expires: new Date(Date.now() + refreshTokenExpire * 24 * 60 * 60 * 1000), // 3 days
   httpOnly: true,
-  sameSite: process.env.NODE_ENV === "production" ? "lax" : "strict",
+  sameSite: "none",
   maxAge: refreshTokenExpire * 24 * 60 * 60 * 1000,
-  secure: process.env.NODE_ENV === "production" ? true : false,
+  secure: true,
 };
+// sameSite: process.env.NODE_ENV === "production" ? "lax" : "strict",
+// secure: process.env.NODE_ENV === "production" ? true : false,
 
 export const sendToken = async (
   user: Iuser,

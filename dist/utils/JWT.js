@@ -80,17 +80,21 @@ const refreshTokenExpire = parseInt(process.env.REFRESH_TOKEN_EXPIRE || "3", 10)
 exports.accessTokenOptions = {
     expires: new Date(Date.now() + accessTokenExpire * 60 * 60 * 1000), // 1 hour
     httpOnly: true,
-    sameSite: process.env.NODE_ENV === "production" ? "lax" : "strict",
+    sameSite: "none",
     maxAge: accessTokenExpire * 60 * 60 * 1000,
-    secure: process.env.NODE_ENV === "production" ? true : false,
+    secure: true,
 };
+// sameSite: process.env.NODE_ENV === "production" ? "lax" : "strict",
+// secure: process.env.NODE_ENV === "production" ? true : false,
 exports.refreshTokenOptions = {
     expires: new Date(Date.now() + refreshTokenExpire * 24 * 60 * 60 * 1000), // 3 days
     httpOnly: true,
-    sameSite: process.env.NODE_ENV === "production" ? "lax" : "strict",
+    sameSite: "none",
     maxAge: refreshTokenExpire * 24 * 60 * 60 * 1000,
-    secure: process.env.NODE_ENV === "production" ? true : false,
+    secure: true,
 };
+// sameSite: process.env.NODE_ENV === "production" ? "lax" : "strict",
+// secure: process.env.NODE_ENV === "production" ? true : false,
 const sendToken = async (user, statusCode, res) => {
     const redis = createRedisClient();
     try {
