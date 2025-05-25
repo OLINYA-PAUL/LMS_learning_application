@@ -107,6 +107,7 @@ const sendToken = async (user, statusCode, res) => {
             }
         });
         // Set cookies in response using exported options
+        // Set cookies in response using exported options
         res.cookie("access_token", access_token, exports.accessTokenOptions);
         res.cookie("refresh_token", refresh_token, exports.refreshTokenOptions);
         res.status(statusCode).json({
