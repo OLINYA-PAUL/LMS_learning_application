@@ -7,6 +7,7 @@ import { Server as socketIOServer } from "socket.io";
 
 /**
  * Initializes the Socket.IO server and attaches it to the given HTTP server
+ * Initializes the Socket.IO server and attaches it to the given HTTP server
  * @param server - The HTTP server to attach Socket.IO to
  */
 const initialiseSocketIO = (server: http.Server) => {

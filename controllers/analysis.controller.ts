@@ -58,3 +58,22 @@ export const getOrdersAnalysis = catchAsyncErroMiddleWare(
     });
   }
 );
+
+
+
+// export const getOrdersAnalysis = catchAsyncErroMiddleWare(
+//   async (req: Request, res: Response, next: NextFunction) => {
+//     const oderAanalysis = await generateLast12MonthData(OrderModel);
+
+//     if (!oderAanalysis) {
+//       return next(
+//         new ErrorHandler("can't generate analysis for this orders data", 400)
+//       );
+//     }
+
+//     res.status(200).json({
+//       success: true,
+//       oderAanalysis,
+//     });
+//   }
+// );
