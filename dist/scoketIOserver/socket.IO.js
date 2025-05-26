@@ -3,6 +3,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.initialiseSocketIO = void 0;
 // Import and rename the Socket.IO server class for use
 const socket_io_1 = require("socket.io");
+// import { Server as socketIOServer } from "socket.io";
 /**
  * Initializes the Socket.IO server and attaches it to the given HTTP server
  * @param server - The HTTP server to attach Socket.IO to
